@@ -19,9 +19,6 @@ importers:
       '@langchain/openai':
         specifier: ^1.2.0
         version: 1.2.0(@langchain/core@1.1.8(openai@6.15.0(zod@4.2.1)))
-      dotenv:
-        specifier: ^17.2.3
-        version: 17.2.3
       langchain:
         specifier: ^1.2.3
         version: 1.2.3(@langchain/core@1.1.8(openai@6.15.0(zod@4.2.1)))(openai@6.15.0(zod@4.2.1))
@@ -292,10 +289,6 @@ packages:
   decamelize@1.2.0:
     resolution: {integrity: sha512-z2S+W9X73hAUUki+N+9Za2lBlun89zigOyGrsax+KUQ6wKW4ZoWpEYBkGhQjwAjjDCkWxhY0VKEhk8wzY7F5cA==}
     engines: {node: '>=0.10.0'}
-
-  dotenv@17.2.3:
-    resolution: {integrity: sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==}
-    engines: {node: '>=12'}
 
   esbuild@0.27.2:
     resolution: {integrity: sha512-HyNQImnsOC7X9PMNaCIeAm4ISCQXs5a5YasTXVliKv4uuBo1dKrG0A+uQS8M5eXjVMnLg3WgXaKvprHlFJQffw==}
@@ -597,8 +590,6 @@ snapshots:
       simple-wcswidth: 1.1.2
 
   decamelize@1.2.0: {}
-
-  dotenv@17.2.3: {}
 
   esbuild@0.27.2:
     optionalDependencies:

@@ -1,7 +1,7 @@
 import { LangchainModels } from "./src/langchain/models";
 import { AIModelNames } from "./src/@types/model-names";
 import z from "zod";
-import { LangchainMessages, MessageInput } from "./src/langchain/messages";
+import { MessageInput } from "./src/langchain/messages";
 import {
   AgentMiddleware,
   BaseMessage,
@@ -10,6 +10,12 @@ import {
   modelRetryMiddleware,
 } from "langchain";
 import { ClientTool, ServerTool } from "@langchain/core/tools";
+import { LangchainMessages } from "./src/langchain/messages";
+
+type LangchainConstructor = {
+  googleGeminiToken?: string;
+  openAIApiKey?: string;
+};
 
 export type CallParams = {
   aiModel: AIModelNames;
@@ -34,7 +40,7 @@ export type CallStructuredOutputReturn<T> = Promise<{
 }>;
 
 export class Langchain {
-  constructor() {}
+  constructor(private tokens: LangchainConstructor) {}
 
   async call(params: CallParams): CallReturn {
     const { messages } = params;
@@ -74,12 +80,14 @@ export class Langchain {
     if (aiModel.startsWith("gpt")) {
       return LangchainModels.gpt({
         modelName: aiModel,
+        apiKey: this.tokens.openAIApiKey,
       });
     }
 
     if (aiModel.startsWith("gemini")) {
       return LangchainModels.gemini({
         model: aiModel,
+        apiKey: this.tokens.googleGeminiToken ?? "",
       });
     }
 
@@ -114,25 +122,4 @@ export class Langchain {
   }
 }
 
-const example = async () => {
-  const langchain = new Langchain();
-
-  const outputSchema = z.object({
-    answer: z.string(),
-  });
-
-  const messages = [
-    LangchainMessages.system("You are a helpful assistant."),
-    LangchainMessages.human("What is the capital of France?"),
-  ];
-
-  const { response } = await langchain.callStructuredOutput({
-    aiModel: "gemini-2.5-flash",
-    outputSchema,
-    messages,
-  });
-
-  console.log({ response });
-};
-
-example();
+export { LangchainModels, LangchainMessages };
