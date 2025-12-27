@@ -54,7 +54,9 @@ export class Langchain {
     const response = await agent.invoke({ messages });
 
     return {
-      text: response.messages.at(-1)?.text ?? "Empty response from the model",
+      text:
+        (response.messages.at(-1)?.content as string) ??
+        "Empty response from the model",
       messages: response.messages,
     };
   }
