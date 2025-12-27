@@ -9,6 +9,7 @@ import {
   modelFallbackMiddleware,
   modelRetryMiddleware,
 } from "langchain";
+import { ClientTool, ServerTool } from "@langchain/core/tools";
 
 export type CallParams = {
   aiModel: AIModelNames;
@@ -16,6 +17,7 @@ export type CallParams = {
   systemPrompt?: string;
   maxRetries?: number;
   middleware?: AgentMiddleware[];
+  tools?: (ServerTool | ClientTool)[];
 };
 
 export type CallReturn = Promise<{
@@ -35,17 +37,10 @@ export class Langchain {
   constructor() {}
 
   async call(params: CallParams): CallReturn {
-    const { aiModel, messages, systemPrompt, maxRetries = 3 } = params;
-    const { middleware } = params;
+    const { messages } = params;
 
-    const model = this.getModel(aiModel);
     const agent = createAgent({
-      model,
-      systemPrompt: systemPrompt ?? "",
-      middleware: [
-        ...this.standardMiddlewares(maxRetries),
-        ...(middleware ?? []),
-      ],
+      ...this.standardAgent(params),
     });
 
     const response = await agent.invoke({ messages });
@@ -59,18 +54,11 @@ export class Langchain {
   async callStructuredOutput<T extends z.ZodSchema>(
     params: CallStructuredOutputParams<T>
   ): CallStructuredOutputReturn<typeof params.outputSchema> {
-    const { aiModel, outputSchema, messages, systemPrompt } = params;
-    const { maxRetries = 3, middleware } = params;
+    const { outputSchema, messages } = params;
 
-    const model = this.getModel(aiModel);
     const agent = createAgent({
-      model,
-      systemPrompt: systemPrompt ?? "",
+      ...this.standardAgent(params),
       responseFormat: outputSchema as any,
-      middleware: [
-        ...this.standardMiddlewares(maxRetries),
-        ...(middleware ?? []),
-      ],
     });
 
     const response = await agent.invoke({
@@ -98,6 +86,22 @@ export class Langchain {
     throw new Error("Model not supported");
   }
 
+  private standardAgent(params: CallParams): Parameters<typeof createAgent>[0] {
+    const { aiModel, systemPrompt, maxRetries = 3, middleware, tools } = params;
+
+    const model = this.getModel(aiModel);
+    return {
+      model,
+      systemPrompt: systemPrompt ?? "",
+      middleware: [
+        ...this.standardMiddlewares(maxRetries),
+        ...(middleware ?? []),
+      ],
+      tools: tools ?? [],
+      responseFormat: undefined as any,
+    };
+  }
+
   private standardMiddlewares(maxRetries: number) {
     return [
       modelRetryMiddleware({
@@ -109,3 +113,26 @@ export class Langchain {
     ];
   }
 }
+
+const example = async () => {
+  const langchain = new Langchain();
+
+  const outputSchema = z.object({
+    answer: z.string(),
+  });
+
+  const messages = [
+    LangchainMessages.system("You are a helpful assistant."),
+    LangchainMessages.human("What is the capital of France?"),
+  ];
+
+  const { response } = await langchain.callStructuredOutput({
+    aiModel: "gemini-2.5-flash",
+    outputSchema,
+    messages,
+  });
+
+  console.log({ response });
+};
+
+example();
