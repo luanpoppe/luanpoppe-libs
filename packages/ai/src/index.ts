@@ -19,12 +19,12 @@ type LangchainConstructor = {
 };
 
 export type LangchainCallParams = {
-  agent: {
+  agent?: {
     middleware?: AgentMiddleware[];
     tools?: (ServerTool | ClientTool)[];
   };
 
-  model: Omit<LLMModelConfig, "apiKey" | "model">;
+  modelConfig?: Omit<LLMModelConfig, "apiKey" | "model">;
 
   aiModel: AIModelNames;
   messages: MessageInput[];
@@ -98,13 +98,12 @@ export class Langchain {
   }
 
   private getModel(params: LangchainCallParams) {
-    const { aiModel, model } = params;
-    const { maxTokens, temperature } = model;
+    const { aiModel, modelConfig } = params;
 
     const config: LLMModelConfig = {
       model: aiModel,
-      maxTokens: maxTokens,
-      temperature: temperature,
+      maxTokens: modelConfig?.maxTokens,
+      temperature: modelConfig?.temperature,
     };
 
     if (aiModel.startsWith("gpt")) {
@@ -126,7 +125,6 @@ export class Langchain {
     params: LangchainCallParams
   ): Parameters<typeof createAgent>[0] {
     const { systemPrompt, maxRetries = 3 } = params;
-    const { middleware, tools } = params.agent;
 
     const model = this.getModel(params);
     return {
@@ -134,9 +132,9 @@ export class Langchain {
       systemPrompt: systemPrompt ?? "",
       middleware: [
         ...this.standardMiddlewares(maxRetries),
-        ...(middleware ?? []),
+        ...(params.agent?.middleware ?? []),
       ],
-      tools: tools ?? [],
+      tools: params.agent?.tools ?? [],
       responseFormat: undefined as any,
     };
   }
