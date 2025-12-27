@@ -11,13 +11,14 @@ import {
 } from "langchain";
 import { ClientTool, ServerTool } from "@langchain/core/tools";
 import { LangchainMessages } from "./langchain/messages";
+import { LangchainTools } from "./langchain/tools";
 
 type LangchainConstructor = {
   googleGeminiToken?: string;
   openAIApiKey?: string;
 };
 
-export type CallParams = {
+export type LangchainCallParams = {
   aiModel: AIModelNames;
   messages: MessageInput[];
   systemPrompt?: string;
@@ -26,23 +27,24 @@ export type CallParams = {
   tools?: (ServerTool | ClientTool)[];
 };
 
-export type CallReturn = Promise<{
+export type LangchainCallReturn = Promise<{
   text: string;
   messages: BaseMessage[];
 }>;
 
-export type CallStructuredOutputParams<T extends z.ZodSchema> = CallParams & {
-  outputSchema: T;
-};
+export type LangchainCallStructuredOutputParams<T extends z.ZodSchema> =
+  LangchainCallParams & {
+    outputSchema: T;
+  };
 
-export type CallStructuredOutputReturn<T> = Promise<{
+export type LangchainCallStructuredOutputReturn<T> = Promise<{
   response: z.infer<T>;
 }>;
 
 export class Langchain {
   constructor(private tokens: LangchainConstructor) {}
 
-  async call(params: CallParams): CallReturn {
+  async call(params: LangchainCallParams): LangchainCallReturn {
     const { messages } = params;
 
     const agent = createAgent({
@@ -52,14 +54,14 @@ export class Langchain {
     const response = await agent.invoke({ messages });
 
     return {
-      text: response.messages[0]?.text ?? "Empty response from the model",
+      text: response.messages.at(-1)?.text ?? "Empty response from the model",
       messages: response.messages,
     };
   }
 
   async callStructuredOutput<T extends z.ZodSchema>(
-    params: CallStructuredOutputParams<T>
-  ): CallStructuredOutputReturn<typeof params.outputSchema> {
+    params: LangchainCallStructuredOutputParams<T>
+  ): LangchainCallStructuredOutputReturn<typeof params.outputSchema> {
     const { outputSchema, messages } = params;
 
     const agent = createAgent({
@@ -94,7 +96,9 @@ export class Langchain {
     throw new Error("Model not supported");
   }
 
-  private standardAgent(params: CallParams): Parameters<typeof createAgent>[0] {
+  private standardAgent(
+    params: LangchainCallParams
+  ): Parameters<typeof createAgent>[0] {
     const { aiModel, systemPrompt, maxRetries = 3, middleware, tools } = params;
 
     const model = this.getModel(aiModel);
@@ -122,4 +126,4 @@ export class Langchain {
   }
 }
 
-export { LangchainModels, LangchainMessages };
+export { LangchainModels, LangchainMessages, LangchainTools };
