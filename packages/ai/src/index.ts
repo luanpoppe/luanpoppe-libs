@@ -1,7 +1,7 @@
-import { LangchainModels } from "./src/langchain/models";
-import { AIModelNames } from "./src/@types/model-names";
+import { LangchainModels } from "./langchain/models";
+import { AIModelNames } from "./@types/model-names";
 import z from "zod";
-import { MessageInput } from "./src/langchain/messages";
+import { MessageInput } from "./langchain/messages";
 import {
   AgentMiddleware,
   BaseMessage,
@@ -10,7 +10,7 @@ import {
   modelRetryMiddleware,
 } from "langchain";
 import { ClientTool, ServerTool } from "@langchain/core/tools";
-import { LangchainMessages } from "./src/langchain/messages";
+import { LangchainMessages } from "./langchain/messages";
 
 type LangchainConstructor = {
   googleGeminiToken?: string;
