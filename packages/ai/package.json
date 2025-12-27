@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "publish": "pnpm build && pnpm publish --access=public"
+    "deploy": "pnpm build && pnpm publish --access=public"
   },
   "keywords": [],
   "author": "",
