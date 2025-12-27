@@ -1,4 +1,4 @@
-import { LangchainModels } from "./langchain/models";
+import { LangchainModels, LLMModelConfig } from "./langchain/models";
 import { AIModelNames } from "./@types/model-names";
 import z from "zod";
 import { MessageInput } from "./langchain/messages";
@@ -19,12 +19,17 @@ type LangchainConstructor = {
 };
 
 export type LangchainCallParams = {
+  agent: {
+    middleware?: AgentMiddleware[];
+    tools?: (ServerTool | ClientTool)[];
+  };
+
+  model: Omit<LLMModelConfig, "apiKey" | "model">;
+
   aiModel: AIModelNames;
   messages: MessageInput[];
   systemPrompt?: string;
   maxRetries?: number;
-  middleware?: AgentMiddleware[];
-  tools?: (ServerTool | ClientTool)[];
 };
 
 export type LangchainCallReturn = Promise<{
@@ -80,19 +85,38 @@ export class Langchain {
     return { response: parsedResponse };
   }
 
-  private getModel(aiModel: AIModelNames) {
+  getRawAgent(
+    params: LangchainCallParams,
+    outputSchema?: z.ZodSchema | undefined
+  ) {
+    const agent = createAgent({
+      ...this.standardAgent(params),
+      responseFormat: outputSchema as any,
+    });
+
+    return { agent };
+  }
+
+  private getModel(params: LangchainCallParams) {
+    const { aiModel, model } = params;
+    const { maxTokens, temperature } = model;
+
+    const config: LLMModelConfig = {
+      model: aiModel,
+      maxTokens: maxTokens,
+      temperature: temperature,
+    };
+
     if (aiModel.startsWith("gpt")) {
-      return LangchainModels.gpt({
-        modelName: aiModel,
-        apiKey: this.tokens.openAIApiKey,
-      });
+      config.apiKey = this.tokens.openAIApiKey;
+
+      return LangchainModels.gpt(config);
     }
 
     if (aiModel.startsWith("gemini")) {
-      return LangchainModels.gemini({
-        model: aiModel,
-        apiKey: this.tokens.googleGeminiToken ?? "",
-      });
+      config.apiKey = this.tokens.googleGeminiToken;
+
+      return LangchainModels.gemini(config);
     }
 
     throw new Error("Model not supported");
@@ -101,9 +125,10 @@ export class Langchain {
   private standardAgent(
     params: LangchainCallParams
   ): Parameters<typeof createAgent>[0] {
-    const { aiModel, systemPrompt, maxRetries = 3, middleware, tools } = params;
+    const { systemPrompt, maxRetries = 3 } = params;
+    const { middleware, tools } = params.agent;
 
-    const model = this.getModel(aiModel);
+    const model = this.getModel(params);
     return {
       model,
       systemPrompt: systemPrompt ?? "",

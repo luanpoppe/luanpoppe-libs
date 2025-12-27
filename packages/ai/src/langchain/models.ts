@@ -4,26 +4,46 @@ import {
 } from "@langchain/google-genai";
 import { ChatOpenAI, ChatOpenAIFields } from "@langchain/openai";
 
+export type LLMModelConfig = {
+  model: string;
+  apiKey?: string | undefined;
+  maxTokens?: number | undefined;
+  temperature?: number | undefined;
+};
+
 export class LangchainModels {
-  static gpt(params: ChatOpenAIFields) {
-    if (!params.apiKey)
+  static gpt(params: LLMModelConfig) {
+    const { model, apiKey, maxTokens, temperature } = params;
+    if (!apiKey)
       throw new Error("OpenAI API key is not passed in the model parameters");
 
-    return new ChatOpenAI({
-      maxTokens: 2048,
-      ...params,
-    });
+    const options: ChatOpenAIFields = {
+      model,
+      apiKey,
+    };
+
+    if (maxTokens) options.maxTokens = maxTokens;
+    if (temperature) options.temperature = temperature;
+
+    return new ChatOpenAI(options);
   }
 
-  static gemini(params: GoogleGenerativeAIChatInput) {
-    if (!params.apiKey)
+  static gemini(params: LLMModelConfig) {
+    const { apiKey, maxTokens, model, temperature } = params;
+
+    if (!apiKey)
       throw new Error(
         "Google Gemini API key is not passed in the model parameters"
       );
 
-    return new ChatGoogleGenerativeAI({
-      maxOutputTokens: 2048,
-      ...params,
-    });
+    const options: GoogleGenerativeAIChatInput = {
+      model,
+      apiKey,
+    };
+
+    if (maxTokens) options.maxOutputTokens = maxTokens;
+    if (temperature) options.temperature = temperature;
+
+    return new ChatGoogleGenerativeAI(options);
   }
 }
