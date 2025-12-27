@@ -1,11 +1,11 @@
 {
   "name": "@luanpoppe/ai",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "deploy": "pnpm build && pnpm publish --access=public"
+    "pub": "pnpm build && pnpm publish --access=public"
   },
   "keywords": [],
   "author": "",
