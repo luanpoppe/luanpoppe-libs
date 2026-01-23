@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "target": "esnext",
+    "types": ["node", "vitest/globals"],
+    "sourceMap": true,
+    "strict": true,
+    "verbatimModuleSyntax": false,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["./**/*.ts", "../src/**/*.ts"],
+  "exclude": ["node_modules"]
+}

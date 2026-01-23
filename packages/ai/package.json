@@ -5,7 +5,11 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "pub": "pnpm build && pnpm publish --access=public"
+    "pub": "pnpm build && pnpm publish --access=public",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "keywords": [],
   "author": "",
@@ -20,7 +24,10 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.10",
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/ui": "^4.0.18",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   }
 }
