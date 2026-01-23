@@ -13,4 +13,13 @@ type GeminiModels =
   | "gemini-3-flash"
   | "gemini-3-pro";
 
-export type AIModelNames = ChatGPTModels | GeminiModels;
+type OpenRouterProviders =
+  | "anthropic"
+  | "google"
+  | "openai"
+
+type OpenRouterModels =
+  | `openrouter:${OpenRouterProviders}/${ChatGPTModels | GeminiModels}`
+  | `openrouter/${OpenRouterProviders}/${ChatGPTModels | GeminiModels}`;
+
+export type AIModelNames = ChatGPTModels | GeminiModels | OpenRouterModels;

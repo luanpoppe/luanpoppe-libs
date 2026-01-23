@@ -46,4 +46,26 @@ export class LangchainModels {
 
     return new ChatGoogleGenerativeAI(options);
   }
+
+  static openrouter(params: LLMModelConfig & { httpReferer?: string; title?: string }) {
+    const { apiKey, maxTokens, model, temperature, httpReferer, title } = params;
+
+    if (!apiKey)
+      throw new Error(
+        "OpenRouter API key is not passed in the model parameters"
+      );
+
+    const options: ChatOpenAIFields = {
+      model,
+      apiKey,
+      configuration: {
+        baseURL: "https://openrouter.ai/api/v1",
+      },
+    };
+
+    if (maxTokens) options.maxTokens = maxTokens;
+    if (temperature) options.temperature = temperature;
+
+    return new ChatOpenAI(options);
+  }
 }

@@ -17,6 +17,7 @@ Estes testes fazem chamadas reais para as APIs das LLMs (OpenAI e Google Gemini)
 2. Preencha as variáveis de ambiente no arquivo `.env`:
    - `OPENAI_API_KEY`: Sua chave da API da OpenAI (necessária para testes com GPT)
    - `GOOGLE_GEMINI_TOKEN`: Seu token da API do Google Gemini (necessária para testes com Gemini)
+   - `OPENROUTER_API_KEY`: Sua chave da API do OpenRouter (necessária para testes com OpenRouter)
 
 ### Como funciona?
 

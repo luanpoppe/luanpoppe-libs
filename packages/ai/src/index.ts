@@ -16,6 +16,7 @@ import { LangchainTools } from "./langchain/tools";
 type LangchainConstructor = {
   googleGeminiToken?: string;
   openAIApiKey?: string;
+  openRouterApiKey?: string;
 };
 
 export type LangchainCallParams = {
@@ -116,6 +117,15 @@ export class Langchain {
       config.apiKey = this.tokens.googleGeminiToken;
 
       return LangchainModels.gemini(config);
+    }
+
+    if (aiModel.startsWith("openrouter:") || aiModel.startsWith("openrouter/")) {
+      const modelName = aiModel.replace(/^openrouter[:/]/, "");
+      return LangchainModels.openrouter({
+        ...config,
+        model: modelName,
+        apiKey: this.tokens.openRouterApiKey,
+      });
     }
 
     throw new Error("Model not supported");
