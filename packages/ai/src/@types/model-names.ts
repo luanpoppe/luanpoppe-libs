@@ -13,13 +13,20 @@ type GeminiModels =
   | "gemini-3-flash"
   | "gemini-3-pro";
 
-type OpenRouterProviders =
-  | "anthropic"
-  | "google"
-  | "openai"
+type AnthropicModels = "claude-opus-4.5"
+  | "claude-haiku-4.5"
+  | "claude-sonnet-4.5"
+  | "claude-opus-4.1"
+  | "claude-opus-4"
+  | "claude-sonnet-4";
+
+type OpenRouterProvidersModels =
+  | `google/${GeminiModels}`
+  | `openai/${ChatGPTModels}`
+  | `anthropic/${AnthropicModels}`
 
 type OpenRouterModels =
-  | `openrouter:${OpenRouterProviders}/${ChatGPTModels | GeminiModels}`
-  | `openrouter/${OpenRouterProviders}/${ChatGPTModels | GeminiModels}`;
+  | `openrouter:${OpenRouterProvidersModels}`
+  | `openrouter/${OpenRouterProvidersModels}`;
 
 export type AIModelNames = ChatGPTModels | GeminiModels | OpenRouterModels;
