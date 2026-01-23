@@ -9,7 +9,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "test:e2e": "vitest run tests/e2e",
+    "test:unit": "vitest run tests/unit"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +28,7 @@
     "@types/node": "^25.0.10",
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
+    "dotenv": "^16.4.7",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"

@@ -12,6 +12,6 @@
     "exactOptionalPropertyTypes": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["./**/*.ts", "../src/**/*.ts"],
+  "include": ["./**/*.ts", "../src/**/*.ts", "./e2e/**/*.ts"],
   "exclude": ["node_modules"]
 }
