@@ -48,7 +48,7 @@ export type LangchainCallStructuredOutputReturn<T> = Promise<{
 }>;
 
 export class Langchain {
-  constructor(private tokens: LangchainConstructor) {}
+  constructor(private tokens: LangchainConstructor) { }
 
   async call(params: LangchainCallParams): LangchainCallReturn {
     const { messages } = params;
@@ -70,11 +70,18 @@ export class Langchain {
   async callStructuredOutput<T extends z.ZodSchema>(
     params: LangchainCallStructuredOutputParams<T>
   ): LangchainCallStructuredOutputReturn<typeof params.outputSchema> {
-    const { outputSchema, messages } = params;
+    const { outputSchema, messages, aiModel } = params;
+
+    // Normaliza o schema para compatibilidade com OpenAI/OpenRouter
+    // OpenAI exige que todos os campos em properties estejam no array required
+    const normalizedSchema = this.normalizeSchemaForOpenAI(
+      outputSchema,
+      aiModel
+    );
 
     const agent = createAgent({
       ...this.standardAgent(params),
-      responseFormat: outputSchema as any,
+      responseFormat: normalizedSchema as any,
     });
 
     const response = await agent.invoke({
@@ -84,6 +91,49 @@ export class Langchain {
     const parsedResponse = outputSchema.parse(response?.structuredResponse);
 
     return { response: parsedResponse };
+  }
+
+  /**
+   * Normaliza schemas Zod para compatibilidade com OpenAI/OpenRouter
+   * OpenAI exige que todos os campos em properties estejam no array required
+   * quando usa response_format: 'extract'
+   */
+  private normalizeSchemaForOpenAI<T extends z.ZodSchema>(
+    schema: T,
+    aiModel: string
+  ): z.ZodSchema {
+    // Apenas normaliza para modelos OpenAI/OpenRouter
+    const isOpenAIModel =
+      aiModel.startsWith("gpt") ||
+      aiModel.startsWith("openrouter:openai/") ||
+      aiModel.startsWith("openrouter/openai/");
+
+    if (!isOpenAIModel) {
+      return schema;
+    }
+
+    // Se o schema é um objeto Zod, precisamos normalizar campos opcionais
+    if (schema instanceof z.ZodObject) {
+      const shape = schema.shape;
+      const newShape: Record<string, z.ZodTypeAny> = {};
+
+      // Converte campos opcionais para nullable para compatibilidade com OpenAI
+      // OpenAI requer que todos os campos estejam no array required
+      for (const [key, value] of Object.entries(shape)) {
+        if (value instanceof z.ZodOptional) {
+          // Converte .optional() para .nullable() para compatibilidade com OpenAI
+          const innerType = value._def.innerType as z.ZodTypeAny;
+          // Usa z.union para criar um tipo nullable
+          newShape[key] = z.union([innerType, z.null()]);
+        } else {
+          newShape[key] = value;
+        }
+      }
+
+      return z.object(newShape);
+    }
+
+    return schema;
   }
 
   getRawAgent(

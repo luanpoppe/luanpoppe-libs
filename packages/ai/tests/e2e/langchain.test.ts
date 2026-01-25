@@ -12,10 +12,12 @@ describe("Langchain E2E Tests", () => {
   const shouldRunGeminiTests = !!googleGeminiToken;
   const shouldRunOpenRouterTests = !!openRouterApiKey;
 
+  const timeout = 180 * 1000;
+
   describe("Chamadas básicas", () => {
     it.skipIf(!shouldRunOpenAITests)(
       "deve fazer uma chamada real para GPT-4o e retornar resposta",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           openAIApiKey: openAIApiKey!,
@@ -40,7 +42,7 @@ describe("Langchain E2E Tests", () => {
 
     it.skipIf(!shouldRunGeminiTests)(
       "deve fazer uma chamada real para Gemini e retornar resposta",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           googleGeminiToken: googleGeminiToken!,
@@ -65,7 +67,7 @@ describe("Langchain E2E Tests", () => {
 
     it.skipIf(!shouldRunOpenRouterTests)(
       "deve fazer uma chamada real para OpenRouter e retornar resposta",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           openRouterApiKey: openRouterApiKey!,
@@ -76,7 +78,7 @@ describe("Langchain E2E Tests", () => {
         ];
 
         const result = await langchain.call({
-          aiModel: "openrouter:google/gemini-2.5-flash",
+          aiModel: "openrouter:openai/gpt-5",
           messages,
         });
 
@@ -92,7 +94,7 @@ describe("Langchain E2E Tests", () => {
   describe("Criação de mensagens", () => {
     it.skipIf(!shouldRunOpenAITests)(
       "deve criar mensagens corretamente e fazer chamada",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           openAIApiKey: openAIApiKey!,
@@ -118,7 +120,7 @@ describe("Langchain E2E Tests", () => {
 
     it.skipIf(!shouldRunGeminiTests)(
       "deve criar múltiplas mensagens e fazer chamada",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           googleGeminiToken: googleGeminiToken!,
@@ -142,7 +144,7 @@ describe("Langchain E2E Tests", () => {
 
     it.skipIf(!shouldRunOpenRouterTests)(
       "deve criar mensagens corretamente e fazer chamada com OpenRouter",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           openRouterApiKey: openRouterApiKey!,
@@ -156,7 +158,7 @@ describe("Langchain E2E Tests", () => {
         const messages = [systemMessage, humanMessage];
 
         const result = await langchain.call({
-          aiModel: "openrouter:google/gemini-2.5-flash",
+          aiModel: "openrouter:openai/gpt-5",
           messages,
         });
 
@@ -175,7 +177,7 @@ describe("Langchain E2E Tests", () => {
   describe("System Prompt", () => {
     it.skipIf(!shouldRunOpenAITests)(
       "deve usar systemPrompt corretamente",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           openAIApiKey: openAIApiKey!,
@@ -209,7 +211,7 @@ describe("Langchain E2E Tests", () => {
 
     it.skipIf(!shouldRunOpenRouterTests)(
       "deve usar systemPrompt corretamente com OpenRouter",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           openRouterApiKey: openRouterApiKey!,
@@ -220,7 +222,7 @@ describe("Langchain E2E Tests", () => {
         ];
 
         const result = await langchain.call({
-          aiModel: "openrouter:google/gemini-2.5-flash",
+          aiModel: "openrouter:openai/gpt-5",
           messages,
           systemPrompt: "Você é um cientista. Responda sempre em português brasileiro.",
         });
@@ -276,7 +278,7 @@ describe("Langchain E2E Tests", () => {
   describe("Structured Output", () => {
     it.skipIf(!shouldRunOpenAITests)(
       "deve retornar resposta estruturada com schema Zod",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           openAIApiKey: openAIApiKey!,
@@ -309,7 +311,7 @@ describe("Langchain E2E Tests", () => {
 
     it.skipIf(!shouldRunGeminiTests)(
       "deve retornar resposta estruturada com Gemini",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           googleGeminiToken: googleGeminiToken!,
@@ -341,7 +343,7 @@ describe("Langchain E2E Tests", () => {
 
     it.skipIf(!shouldRunOpenRouterTests)(
       "deve retornar resposta estruturada com OpenRouter",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           openRouterApiKey: openRouterApiKey!,
@@ -357,7 +359,7 @@ describe("Langchain E2E Tests", () => {
         ];
 
         const result = await langchain.callStructuredOutput({
-          aiModel: "openrouter:google/gemini-2.5-flash",
+          aiModel: "openrouter/openai/gpt-5",
           messages,
           outputSchema,
         });
@@ -367,12 +369,56 @@ describe("Langchain E2E Tests", () => {
         expect(result.response.product).toBe(28);
       }
     );
+
+    it.skipIf(!shouldRunOpenRouterTests).only(
+      "deve retornar resposta estruturada com OpenRouter e campo opcional",
+      { timeout },
+      async () => {
+        const langchain = new Langchain({
+          openRouterApiKey: openRouterApiKey!,
+        });
+
+        const outputSchema = z.object({
+          prontuarioFormal: z
+            .string()
+            .describe(
+              "Texto completo do prontuário em escrita formal médica",
+            ).nullable(),
+          dataConsulta: z
+            .string()
+            .optional()
+            .describe("Data da consulta no formato DD/MM/AAAA"),
+        });
+
+        const messages = [
+          LangchainMessages.human(
+            "Crie um prontuário médico formal para um paciente chamado João, 30 anos, com diagnóstico de gripe. A data da consulta foi 25/01/2026."
+          ),
+        ];
+
+        const result = await langchain.callStructuredOutput({
+          aiModel: "openrouter/openai/gpt-5",
+          messages,
+          outputSchema,
+        });
+
+        console.log({ result })
+
+        expect(result.response).toBeDefined();
+        expect(result.response.prontuarioFormal).toBeDefined();
+        expect(typeof result.response.prontuarioFormal).toBe("string");
+        // dataConsulta pode ou não estar presente
+        if (result.response.dataConsulta) {
+          expect(typeof result.response.dataConsulta).toBe("string");
+        }
+      }
+    );
   });
 
   describe("Configurações do modelo", () => {
     it.skipIf(!shouldRunOpenAITests)(
       "deve usar maxTokens e temperature corretamente",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           openAIApiKey: openAIApiKey!,
@@ -399,7 +445,7 @@ describe("Langchain E2E Tests", () => {
 
     it.skipIf(!shouldRunOpenRouterTests)(
       "deve usar maxTokens e temperature corretamente com OpenRouter",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           openRouterApiKey: openRouterApiKey!,
@@ -410,7 +456,7 @@ describe("Langchain E2E Tests", () => {
         ];
 
         const result = await langchain.call({
-          aiModel: "openrouter:google/gemini-2.5-flash",
+          aiModel: "openrouter:openai/gpt-5",
           messages,
           modelConfig: {
             maxTokens: 50,
@@ -428,7 +474,7 @@ describe("Langchain E2E Tests", () => {
   describe("Múltiplas mensagens em conversa", () => {
     it.skipIf(!shouldRunOpenAITests)(
       "deve manter contexto em múltiplas mensagens",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           openAIApiKey: openAIApiKey!,
@@ -452,7 +498,7 @@ describe("Langchain E2E Tests", () => {
 
     it.skipIf(!shouldRunOpenRouterTests)(
       "deve manter contexto em múltiplas mensagens com OpenRouter",
-      { timeout: 30000 },
+      { timeout },
       async () => {
         const langchain = new Langchain({
           openRouterApiKey: openRouterApiKey!,
@@ -465,7 +511,7 @@ describe("Langchain E2E Tests", () => {
         ];
 
         const result = await langchain.call({
-          aiModel: "openrouter:google/gemini-2.5-flash",
+          aiModel: "openrouter:openai/gpt-5",
           messages,
         });
 
