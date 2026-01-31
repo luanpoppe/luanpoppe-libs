@@ -105,7 +105,6 @@ export class Langchain {
     // Apenas normaliza para modelos OpenAI/OpenRouter
     const isOpenAIModel =
       aiModel.startsWith("gpt") ||
-      aiModel.startsWith("openrouter:openai/") ||
       aiModel.startsWith("openrouter/openai/");
 
     if (!isOpenAIModel) {
@@ -169,8 +168,8 @@ export class Langchain {
       return LangchainModels.gemini(config);
     }
 
-    if (aiModel.startsWith("openrouter:") || aiModel.startsWith("openrouter/")) {
-      const modelName = aiModel.replace(/^openrouter[:/]/, "");
+    if (aiModel.startsWith("openrouter/")) {
+      const modelName = aiModel.replace(/^openrouter\//, "");
       return LangchainModels.openrouter({
         ...config,
         model: modelName,

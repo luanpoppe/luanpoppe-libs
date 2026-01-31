@@ -78,7 +78,7 @@ describe("Langchain E2E Tests", () => {
         ];
 
         const result = await langchain.call({
-          aiModel: "openrouter:openai/gpt-5",
+          aiModel: "openrouter/openai/gpt-5",
           messages,
         });
 
@@ -158,7 +158,7 @@ describe("Langchain E2E Tests", () => {
         const messages = [systemMessage, humanMessage];
 
         const result = await langchain.call({
-          aiModel: "openrouter:openai/gpt-5",
+          aiModel: "openrouter/openai/gpt-5",
           messages,
         });
 
@@ -222,7 +222,7 @@ describe("Langchain E2E Tests", () => {
         ];
 
         const result = await langchain.call({
-          aiModel: "openrouter:openai/gpt-5",
+          aiModel: "openrouter/openai/gpt-5",
           messages,
           systemPrompt: "Você é um cientista. Responda sempre em português brasileiro.",
         });
@@ -456,7 +456,7 @@ describe("Langchain E2E Tests", () => {
         ];
 
         const result = await langchain.call({
-          aiModel: "openrouter:openai/gpt-5",
+          aiModel: "openrouter/openai/gpt-5",
           messages,
           modelConfig: {
             maxTokens: 50,
@@ -511,7 +511,7 @@ describe("Langchain E2E Tests", () => {
         ];
 
         const result = await langchain.call({
-          aiModel: "openrouter:openai/gpt-5",
+          aiModel: "openrouter/openai/gpt-5",
           messages,
         });
 

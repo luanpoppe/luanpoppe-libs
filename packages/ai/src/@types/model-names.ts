@@ -25,8 +25,6 @@ type OpenRouterProvidersModels =
   | `openai/${ChatGPTModels}`
   | `anthropic/${AnthropicModels}`
 
-type OpenRouterModels =
-  | `openrouter:${OpenRouterProvidersModels}`
-  | `openrouter/${OpenRouterProvidersModels}`;
+type OpenRouterModels = `openrouter/${OpenRouterProvidersModels}`;
 
 export type AIModelNames = ChatGPTModels | GeminiModels | OpenRouterModels;
