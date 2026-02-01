@@ -7,7 +7,7 @@ vi.mock("langchain", () => {
     constructor(public content: string) { }
   }
   class MockHumanMessage {
-    constructor(public content: string) { }
+    constructor(public content: string | Array<any>) { }
   }
   class MockAIMessage {
     constructor(public content: string) { }
@@ -15,7 +15,7 @@ vi.mock("langchain", () => {
   function SystemMessageConstructor(content: string) {
     return new MockSystemMessage(content);
   }
-  function HumanMessageConstructor(content: string) {
+  function HumanMessageConstructor(content: string | Array<any>) {
     return new MockHumanMessage(content);
   }
   function AIMessageConstructor(content: string) {
@@ -96,6 +96,83 @@ describe("LangchainMessages", () => {
       expect(result).toBeDefined();
       expect(result.content).toBe("");
       expect(AIMessage).toHaveBeenCalledWith("");
+    });
+  });
+
+  describe("humanAudio", () => {
+    it("deve criar uma HumanMessage com conteúdo de áudio", async () => {
+      const audioBuffer = Buffer.from("fake audio data");
+      const text = "Transcreva este áudio";
+
+      const result = await LangchainMessages.humanAudio({
+        audio: {
+          buffer: audioBuffer,
+          mimeType: "audio/mp3",
+          filename: "audio.mp3",
+        },
+        text,
+      });
+
+      expect(result).toBeDefined();
+      expect(HumanMessage).toHaveBeenCalled();
+      const callArgs = (HumanMessage as any).mock.calls[0][0];
+      expect(callArgs.content).toBeInstanceOf(Array);
+      expect(callArgs.content.length).toBe(2);
+      // Texto agora é um objeto quando há áudio multimodal
+      expect(callArgs.content[0].type).toBe("text");
+      expect(callArgs.content[0].text).toBe(text);
+      expect(callArgs.content[1].type).toBe("audio");
+      expect(callArgs.content[1].source_type).toBe("base64");
+      expect(callArgs.content[1].mime_type).toBe("audio/mp3");
+      expect(callArgs.content[1].data).toBeDefined();
+    });
+
+    it("deve criar uma HumanMessage apenas com áudio (sem texto)", async () => {
+      const audioBuffer = Buffer.from("fake audio data");
+
+      const result = await LangchainMessages.humanAudio({
+        audio: {
+          buffer: audioBuffer,
+        },
+      });
+
+      expect(result).toBeDefined();
+      expect(HumanMessage).toHaveBeenCalled();
+      const callArgs = (HumanMessage as any).mock.calls[0][0];
+      expect(callArgs.content).toBeInstanceOf(Array);
+      expect(callArgs.content.length).toBe(1);
+      expect(callArgs.content[0].type).toBe("audio");
+    });
+
+    it("deve detectar MIME type automaticamente pela extensão", async () => {
+      const audioBuffer = Buffer.from("fake audio data");
+
+      const result = await LangchainMessages.humanAudio({
+        audio: {
+          buffer: audioBuffer,
+          filename: "audio.wav",
+        },
+      });
+
+      expect(result).toBeDefined();
+      const callArgs = (HumanMessage as any).mock.calls[0][0];
+      expect(callArgs.content[0].mime_type).toBe("audio/wav");
+    });
+
+    it("deve usar MIME type fornecido mesmo com extensão", async () => {
+      const audioBuffer = Buffer.from("fake audio data");
+
+      const result = await LangchainMessages.humanAudio({
+        audio: {
+          buffer: audioBuffer,
+          mimeType: "audio/mp4",
+          filename: "audio.wav",
+        },
+      });
+
+      expect(result).toBeDefined();
+      const callArgs = (HumanMessage as any).mock.calls[0][0];
+      expect(callArgs.content[0].mime_type).toBe("audio/mp4");
     });
   });
 });

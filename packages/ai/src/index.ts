@@ -48,7 +48,7 @@ export type LangchainCallStructuredOutputReturn<T> = Promise<{
 }>;
 
 export class Langchain {
-  constructor(private tokens: LangchainConstructor) { }
+  constructor(private tokens: LangchainConstructor) {}
 
   async call(params: LangchainCallParams): LangchainCallReturn {
     const { messages } = params;
@@ -104,8 +104,7 @@ export class Langchain {
   ): z.ZodSchema {
     // Apenas normaliza para modelos OpenAI/OpenRouter
     const isOpenAIModel =
-      aiModel.startsWith("gpt") ||
-      aiModel.startsWith("openrouter/openai/");
+      aiModel.startsWith("gpt") || aiModel.startsWith("openrouter/openai/");
 
     if (!isOpenAIModel) {
       return schema;
@@ -211,3 +210,11 @@ export class Langchain {
 }
 
 export { LangchainModels, LangchainMessages, LangchainTools };
+export { LangchainAudioTranscription } from "./langchain/audio-transcription";
+export { AudioUtils } from "./utils/audio-utils";
+export type { AudioBuffer, AudioMimeType } from "./@types/audio";
+export type {
+  AudioContentBlock,
+  HumanMessageWithAudioOptions,
+} from "./langchain/messages";
+export type { WhisperTranscriptionOptions } from "./langchain/audio-transcription";

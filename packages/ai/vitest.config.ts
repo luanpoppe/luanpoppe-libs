@@ -3,7 +3,7 @@ import { resolve } from "path";
 import { config } from "dotenv";
 
 // Carrega o arquivo .env da raiz do pacote
-config({ path: resolve(__dirname, ".env") });
+config({ path: resolve(process.cwd(), ".env") });
 
 export default defineConfig({
   test: {
