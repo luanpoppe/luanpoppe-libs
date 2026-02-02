@@ -118,7 +118,7 @@ export class LangchainMessages {
       // Prepara opções de transcrição - só inclui language se não houver mimeType
       // Com exactOptionalPropertyTypes: true, não podemos passar undefined explicitamente
       const transcriptionOptions = mimeType
-        ? ({} as { language?: string })
+        ? { format: mimeType }
         : { language: "pt" };
 
       const transcribedText =

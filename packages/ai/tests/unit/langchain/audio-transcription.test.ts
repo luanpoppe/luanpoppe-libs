@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { LangchainAudioTranscription } from "../../../src/langchain/audio-transcription";
+import { LangchainAudioTranscription } from "../../../src/langchain/audio-transcription.js";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
@@ -20,23 +20,23 @@ if (!realFs.existsSync(tempDir)) {
 vi.mock("fs", () => {
   // Usa require para acessar o módulo real diretamente
   const actualFs = require("fs");
-  
+
   const writeFileSyncSpy = vi.fn((filePath: string, data: Buffer) => {
     // Cria o arquivo real no sistema de arquivos
     actualFs.writeFileSync(filePath, data);
   });
-  
+
   const readFileSyncSpy = vi.fn((filePath: string) => {
     if (actualFs.existsSync(filePath)) {
       return actualFs.readFileSync(filePath);
     }
     return Buffer.from("fake audio data");
   });
-  
+
   const existsSyncSpy = vi.fn((filePath: string) => {
     return actualFs.existsSync(filePath) || filePath.startsWith("/path/to/");
   });
-  
+
   const unlinkSyncSpy = vi.fn((filePath: string) => {
     if (actualFs.existsSync(filePath)) {
       actualFs.unlinkSync(filePath);
@@ -57,7 +57,7 @@ vi.mock("os", () => {
   const realOs = require("os");
   const realPath = require("path");
   const tempDirValue = realPath.join(realOs.tmpdir(), "langchain-audio-test");
-  
+
   return {
     tmpdir: vi.fn(() => tempDirValue),
   };
@@ -69,14 +69,16 @@ vi.mock("os", () => {
 vi.mock("@langchain/community/document_loaders/fs/openai_whisper_audio", () => {
   // Importa o fs mockado para verificar arquivos
   const fs = require("fs");
-  
+
   class MockOpenAIWhisperAudio {
     constructor(public filePath: string, public options?: any) {
       // Verifica se o arquivo existe usando o fs mockado
       // O arquivo já deve ter sido criado pelo writeFileSync antes desta chamada
       if (!fs.existsSync(filePath)) {
         // Se não existe, lança o mesmo erro que o loader real lançaria
-        const error: any = new Error(`ENOENT: no such file or directory, open '${filePath}'`);
+        const error: any = new Error(
+          `ENOENT: no such file or directory, open '${filePath}'`
+        );
         error.code = "ENOENT";
         error.errno = -4058;
         error.syscall = "open";
@@ -106,7 +108,7 @@ vi.mock("@langchain/community/document_loaders/fs/openai_whisper_audio", () => {
 describe("LangchainAudioTranscription", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Limpa arquivos temporários criados nos testes anteriores
     if (realFs.existsSync(tempDir)) {
       const files = realFs.readdirSync(tempDir);
@@ -134,40 +136,47 @@ describe("LangchainAudioTranscription", () => {
 
   describe("transcribeWithWhisper", () => {
     it("deve transcrever áudio usando Whisper", async () => {
+      // Timeout maior: vi.resetModules + import dinâmico podem ser lentos
       // Mocka diretamente o módulo após ser carregado
-      const audioModulePath = "@langchain/community/document_loaders/fs/openai_whisper_audio";
+      const audioModulePath =
+        "@langchain/community/document_loaders/fs/openai_whisper_audio";
       const audioModule = require(audioModulePath);
-      
+
       class MockLoader {
         constructor(public filePath: string) {
           // Usa o fs mockado importado
           if (!fs.existsSync(filePath)) {
-            throw new Error(`ENOENT: no such file or directory, open '${filePath}'`);
+            throw new Error(
+              `ENOENT: no such file or directory, open '${filePath}'`
+            );
           }
         }
         async load() {
           return [{ pageContent: "Texto transcrito do áudio", metadata: {} }];
         }
       }
-      
+
       // Substitui temporariamente a classe
       const originalLoader = audioModule.OpenAIWhisperAudio;
       audioModule.OpenAIWhisperAudio = MockLoader;
-      
+
       // Recarrega o módulo para pegar o mock
       vi.resetModules();
-      const transcriptionModule = await import("../../../src/langchain/audio-transcription");
-      
+      const transcriptionModule = await import(
+        "../../../src/langchain/audio-transcription.js"
+      );
+
       // Força a reimportação do loader mockado
       const newAudioModule = require(audioModulePath);
       newAudioModule.OpenAIWhisperAudio = MockLoader;
-      
+
       try {
         const audioBuffer = Buffer.from("fake audio data");
 
-        const result = await transcriptionModule.LangchainAudioTranscription.transcribeWithWhisper(
-          audioBuffer
-        );
+        const result =
+          await transcriptionModule.LangchainAudioTranscription.transcribeWithWhisper(
+            audioBuffer
+          );
 
         expect(result).toBe("Texto transcrito do áudio");
         expect(vi.mocked(fs.writeFileSync)).toHaveBeenCalled();
@@ -176,39 +185,47 @@ describe("LangchainAudioTranscription", () => {
         // Restaura o loader original
         audioModule.OpenAIWhisperAudio = originalLoader;
       }
-    });
+    }, 10000);
 
     it("deve aceitar opções de transcrição", async () => {
-      const audioModulePath = "@langchain/community/document_loaders/fs/openai_whisper_audio";
+      const audioModulePath =
+        "@langchain/community/document_loaders/fs/openai_whisper_audio";
       const audioModule = require(audioModulePath);
-      
+
       class MockLoader {
         constructor(public filePath: string) {
           // Usa o fs mockado importado
           if (!fs.existsSync(filePath)) {
-            throw new Error(`ENOENT: no such file or directory, open '${filePath}'`);
+            throw new Error(
+              `ENOENT: no such file or directory, open '${filePath}'`
+            );
           }
         }
         async load() {
           return [{ pageContent: "Texto transcrito do áudio", metadata: {} }];
         }
       }
-      
+
       const originalLoader = audioModule.OpenAIWhisperAudio;
       audioModule.OpenAIWhisperAudio = MockLoader;
-      
+
       vi.resetModules();
-      const transcriptionModule = await import("../../../src/langchain/audio-transcription");
+      const transcriptionModule = await import(
+        "../../../src/langchain/audio-transcription.js"
+      );
       const newAudioModule = require(audioModulePath);
       newAudioModule.OpenAIWhisperAudio = MockLoader;
-      
+
       try {
         const audioBuffer = Buffer.from("fake audio data");
 
-        await transcriptionModule.LangchainAudioTranscription.transcribeWithWhisper(audioBuffer, {
-          language: "pt",
-          responseFormat: "json",
-        });
+        await transcriptionModule.LangchainAudioTranscription.transcribeWithWhisper(
+          audioBuffer,
+          {
+            languageIn2Digits: "pt",
+            responseFormat: "json",
+          }
+        );
 
         expect(vi.mocked(fs.writeFileSync)).toHaveBeenCalled();
       } finally {
@@ -216,32 +233,77 @@ describe("LangchainAudioTranscription", () => {
       }
     });
 
+    it("deve aceitar formato de áudio nas opções (extensão)", async () => {
+      const audioBuffer = Buffer.from("fake wav audio data");
+
+      const result = await LangchainAudioTranscription.transcribeWithWhisper(
+        audioBuffer,
+        {
+          format: "wav",
+        }
+      );
+
+      expect(result).toBe("Texto transcrito do áudio");
+      // Verifica que o arquivo temporário foi criado com extensão .wav
+      expect(vi.mocked(fs.writeFileSync)).toHaveBeenCalledWith(
+        expect.stringMatching(/\.wav$/),
+        expect.any(Buffer)
+      );
+    });
+
+    it("deve aceitar MIME type como formato", async () => {
+      const audioBuffer = Buffer.from("fake webm audio data");
+
+      const result = await LangchainAudioTranscription.transcribeWithWhisper(
+        audioBuffer,
+        {
+          format: "audio/webm",
+        }
+      );
+
+      expect(result).toBe("Texto transcrito do áudio");
+      // Verifica que o arquivo temporário foi criado com extensão .webm
+      expect(vi.mocked(fs.writeFileSync)).toHaveBeenCalledWith(
+        expect.stringMatching(/\.webm$/),
+        expect.any(Buffer)
+      );
+    });
+
     it("deve limpar arquivo temporário mesmo em caso de erro", async () => {
       const audioBuffer = Buffer.from("fake audio data");
-      
+
       // Mocka o módulo antes de importar
-      vi.doMock("@langchain/community/document_loaders/fs/openai_whisper_audio", () => {
-        const fs = require("fs");
-        
-        class MockLoaderWithError {
-          constructor(public filePath: string) {
-            if (!fs.existsSync(filePath)) {
-              throw new Error(`ENOENT: no such file or directory, open '${filePath}'`);
+      vi.doMock(
+        "@langchain/community/document_loaders/fs/openai_whisper_audio",
+        () => {
+          const fs = require("fs");
+
+          class MockLoaderWithError {
+            constructor(public filePath: string) {
+              if (!fs.existsSync(filePath)) {
+                throw new Error(
+                  `ENOENT: no such file or directory, open '${filePath}'`
+                );
+              }
+            }
+            async load() {
+              throw new Error("Erro de transcrição");
             }
           }
-          async load() {
-            throw new Error("Erro de transcrição");
-          }
+
+          return { OpenAIWhisperAudio: MockLoaderWithError };
         }
-        
-        return { OpenAIWhisperAudio: MockLoaderWithError };
-      });
-      
+      );
+
       vi.resetModules();
-      const transcriptionModule = await import("../../../src/langchain/audio-transcription");
-      
+      const transcriptionModule = await import(
+        "../../../src/langchain/audio-transcription.js"
+      );
+
       await expect(
-        transcriptionModule.LangchainAudioTranscription.transcribeWithWhisper(audioBuffer)
+        transcriptionModule.LangchainAudioTranscription.transcribeWithWhisper(
+          audioBuffer
+        )
       ).rejects.toThrow("Erro de transcrição");
 
       // Verifica que tentou remover o arquivo temporário
@@ -252,36 +314,63 @@ describe("LangchainAudioTranscription", () => {
   describe("transcribeFileWithWhisper", () => {
     it("deve transcrever arquivo usando Whisper", async () => {
       // Limpa o mock anterior e cria um novo mock
-      vi.doUnmock("@langchain/community/document_loaders/fs/openai_whisper_audio");
-      vi.doMock("@langchain/community/document_loaders/fs/openai_whisper_audio", () => {
-        const fs = require("fs");
-        
-        class MockLoader {
-          constructor(public filePath: string) {
-            if (!fs.existsSync(filePath)) {
-              throw new Error(`ENOENT: no such file or directory, open '${filePath}'`);
+      vi.doUnmock(
+        "@langchain/community/document_loaders/fs/openai_whisper_audio"
+      );
+      vi.doMock(
+        "@langchain/community/document_loaders/fs/openai_whisper_audio",
+        () => {
+          const fs = require("fs");
+
+          class MockLoader {
+            constructor(public filePath: string) {
+              if (!fs.existsSync(filePath)) {
+                throw new Error(
+                  `ENOENT: no such file or directory, open '${filePath}'`
+                );
+              }
+            }
+            async load() {
+              return [
+                { pageContent: "Texto transcrito do áudio", metadata: {} },
+              ];
             }
           }
-          async load() {
-            return [{ pageContent: "Texto transcrito do áudio", metadata: {} }];
-          }
+
+          return { OpenAIWhisperAudio: MockLoader };
         }
-        
-        return { OpenAIWhisperAudio: MockLoader };
-      });
-      
+      );
+
       vi.resetModules();
-      const transcriptionModule = await import("../../../src/langchain/audio-transcription");
+      const transcriptionModule = await import(
+        "../../../src/langchain/audio-transcription.js"
+      );
       const fs = require("fs");
-      
+
       const filePath = "/path/to/audio.mp3";
 
       const result =
-        await transcriptionModule.LangchainAudioTranscription.transcribeFileWithWhisper(filePath);
+        await transcriptionModule.LangchainAudioTranscription.transcribeFileWithWhisper(
+          filePath
+        );
 
       expect(result).toBe("Texto transcrito do áudio");
       // Verifica que readFileSync foi chamado (pode não ser spy após resetModules)
       expect(fs.readFileSync).toBeDefined();
+    });
+
+    it("deve extrair formato da extensão do arquivo quando format não é informado", async () => {
+      const filePath = "/path/to/audio.wav";
+
+      const result =
+        await LangchainAudioTranscription.transcribeFileWithWhisper(filePath);
+
+      expect(result).toBe("Texto transcrito do áudio");
+      // Verifica que o arquivo temporário foi criado com extensão .wav (extraída do path)
+      expect(vi.mocked(fs.writeFileSync)).toHaveBeenCalledWith(
+        expect.stringMatching(/\.wav$/),
+        expect.any(Buffer)
+      );
     });
 
     it("deve lançar erro se arquivo não existir", async () => {

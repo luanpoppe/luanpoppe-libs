@@ -1,15 +1,18 @@
 import { Document } from "@langchain/core/documents";
 import * as fs from "fs";
-import type { AudioBuffer } from "../@types/audio";
+import * as path from "path";
+import type { AudioBuffer, AudioMimeType } from "../@types/audio";
 import { OpenAIWhisperAudio } from "@langchain/community/document_loaders/fs/openai_whisper_audio";
 import { FilesUtils } from "../utils/files-utils";
 
 export type WhisperTranscriptionOptions = {
-  language?: string;
+  languageIn2Digits?: string;
   prompt?: string;
   responseFormat?: "json" | "text" | "srt" | "verbose_json" | "vtt";
   temperature?: number;
   timestampGranularities?: ("word" | "segment")[];
+  /** Formato do áudio: extensão ("mp3", "wav", "webm") ou MIME type ("audio/wav", "audio/webm") */
+  format?: string | AudioMimeType;
 };
 
 export class LangchainAudioTranscription {
@@ -30,7 +33,11 @@ export class LangchainAudioTranscription {
     options: WhisperTranscriptionOptions = {},
     openAIApiKey?: string
   ): Promise<string> {
-    const tempFilePath = FilesUtils.createTempFile(audioBuffer, "whisper");
+    const tempFilePath = FilesUtils.createTempFile(
+      audioBuffer,
+      "whisper",
+      options.format
+    );
 
     try {
       // Configura a API key se fornecida
@@ -42,8 +49,8 @@ export class LangchainAudioTranscription {
         response_format: options.responseFormat || "text",
       };
 
-      if (options.language) {
-        transcriptionParams.language = options.language;
+      if (options.languageIn2Digits) {
+        transcriptionParams.language = options.languageIn2Digits;
       }
       if (options.prompt) {
         transcriptionParams.prompt = options.prompt;
@@ -77,6 +84,12 @@ export class LangchainAudioTranscription {
     }
 
     const audioBuffer = fs.readFileSync(filePath);
-    return this.transcribeWithWhisper(audioBuffer, options, openAIApiKey);
+    const format =
+      options.format ?? (path.extname(filePath).replace(/^\./, "") || "mp3");
+    return this.transcribeWithWhisper(
+      audioBuffer,
+      { ...options, format },
+      openAIApiKey
+    );
   }
 }

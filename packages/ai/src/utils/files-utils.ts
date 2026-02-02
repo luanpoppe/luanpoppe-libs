@@ -1,17 +1,30 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import type { AudioBuffer } from "../@types/audio";
+import {
+  MIME_TO_EXTENSION,
+  type AudioBuffer,
+  type AudioMimeType,
+} from "../@types/audio";
 
 export class FilesUtils {
   static createTempFile(
     audioBuffer: AudioBuffer,
-    prefix: string = "audio"
+    prefix: string = "audio",
+    format?: string | AudioMimeType
   ): string {
+    const extension = format
+      ? format.startsWith("audio/")
+        ? MIME_TO_EXTENSION[format as AudioMimeType] ?? "mp3"
+        : format.replace(/^\./, "")
+      : "mp3";
+
     const tempDir = os.tmpdir();
     const tempFilePath = path.join(
       tempDir,
-      `${prefix}-${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`
+      `${prefix}-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(7)}.${extension}`
     );
 
     // Converte o buffer para Buffer se necessário
