@@ -137,7 +137,7 @@ export class Langchain {
   getRawAgent(
     params: LangchainCallParams,
     outputSchema?: z.ZodSchema | undefined
-  ) {
+  ): { agent: ReturnType<typeof createAgent> } {
     const agent = createAgent({
       ...this.standardAgent(params),
       responseFormat: outputSchema as any,
@@ -217,4 +217,7 @@ export type {
   AudioContentBlock,
   HumanMessageWithAudioOptions,
 } from "./langchain/messages";
-export type { WhisperTranscriptionOptions } from "./langchain/audio-transcription";
+export type {
+  WhisperModel,
+  WhisperTranscriptionOptions,
+} from "./langchain/audio-transcription";

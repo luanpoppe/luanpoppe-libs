@@ -1,6 +1,6 @@
 {
   "name": "@luanpoppe/ai",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
@@ -19,6 +19,7 @@
   "packageManager": "pnpm@10.20.0",
   "dependencies": {
     "@langchain/community": "^1.1.10",
+    "openai": "^6.17.0",
     "@langchain/core": "^1.1.16",
     "@langchain/google-genai": "^2.1.12",
     "@langchain/openai": "^1.2.3",

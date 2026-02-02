@@ -1,11 +1,21 @@
-import { Document } from "@langchain/core/documents";
 import * as fs from "fs";
 import * as path from "path";
+import OpenAI from "openai";
+import { toFile } from "openai";
 import type { AudioBuffer, AudioMimeType } from "../@types/audio";
-import { OpenAIWhisperAudio } from "@langchain/community/document_loaders/fs/openai_whisper_audio";
-import { FilesUtils } from "../utils/files-utils";
+import { MIME_TO_EXTENSION } from "../@types/audio";
+
+/** Modelos disponíveis na API de transcrição OpenAI (Speech-to-Text) */
+export type WhisperModel =
+  | "whisper-1"
+  | "gpt-4o-transcribe"
+  | "gpt-4o-mini-transcribe"
+  | "gpt-4o-mini-transcribe-2025-12-15"
+  | "gpt-4o-transcribe-diarize";
 
 export type WhisperTranscriptionOptions = {
+  /** Modelo de transcrição. Padrão: "whisper-1". gpt-4o-transcribe e gpt-4o-mini-transcribe têm maior qualidade. */
+  model?: WhisperModel;
   languageIn2Digits?: string;
   prompt?: string;
   responseFormat?: "json" | "text" | "srt" | "verbose_json" | "vtt";
@@ -15,63 +25,63 @@ export type WhisperTranscriptionOptions = {
   format?: string | AudioMimeType;
 };
 
-export class LangchainAudioTranscription {
-  private static extractTextFromDocs(docs: Document[]): string {
-    if (docs.length === 0) {
-      throw new Error("Nenhum documento foi retornado pela transcrição");
-    }
-    const firstDoc = docs[0];
-    if (!firstDoc) {
-      throw new Error("Documento vazio retornado pela transcrição");
-    }
-    // LangChain.js usa pageContent (camelCase), não page_content
-    return firstDoc.pageContent;
+function getExtension(format?: string | AudioMimeType): string {
+  if (!format) return "mp3";
+  if (format.startsWith("audio/")) {
+    return MIME_TO_EXTENSION[format as AudioMimeType] ?? "mp3";
   }
+  return format.replace(/^\./, "");
+}
 
+function toBuffer(audioBuffer: AudioBuffer): Buffer {
+  if (audioBuffer instanceof Buffer) return audioBuffer;
+  if (audioBuffer instanceof ArrayBuffer) return Buffer.from(audioBuffer);
+  return Buffer.from(audioBuffer as Uint8Array);
+}
+
+export class LangchainAudioTranscription {
   static async transcribeWithWhisper(
     audioBuffer: AudioBuffer,
     options: WhisperTranscriptionOptions = {},
     openAIApiKey?: string
   ): Promise<string> {
-    const tempFilePath = FilesUtils.createTempFile(
-      audioBuffer,
-      "whisper",
-      options.format
+    if (openAIApiKey) {
+      process.env.OPENAI_API_KEY = openAIApiKey;
+    }
+
+    const buffer = toBuffer(audioBuffer);
+    const extension = getExtension(options.format);
+    const fileName = `whisper-${Date.now()}.${extension}`;
+
+    const file = await toFile(buffer, fileName);
+
+    const openai = new OpenAI();
+
+    const transcriptionParams: OpenAI.Audio.TranscriptionCreateParams = {
+      file,
+      model: options.model ?? "whisper-1",
+      response_format: options.responseFormat ?? "text",
+    };
+
+    if (options.languageIn2Digits) {
+      transcriptionParams.language = options.languageIn2Digits;
+    }
+    if (options.prompt) {
+      transcriptionParams.prompt = options.prompt;
+    }
+    if (options.temperature !== undefined) {
+      transcriptionParams.temperature = options.temperature;
+    }
+    if (options.timestampGranularities) {
+      transcriptionParams.timestamp_granularities =
+        options.timestampGranularities;
+    }
+
+    const response = await openai.audio.transcriptions.create(
+      transcriptionParams
     );
 
-    try {
-      // Configura a API key se fornecida
-      if (openAIApiKey) {
-        process.env.OPENAI_API_KEY = openAIApiKey;
-      }
-
-      const transcriptionParams: any = {
-        response_format: options.responseFormat || "text",
-      };
-
-      if (options.languageIn2Digits) {
-        transcriptionParams.language = options.languageIn2Digits;
-      }
-      if (options.prompt) {
-        transcriptionParams.prompt = options.prompt;
-      }
-      if (options.temperature !== undefined) {
-        transcriptionParams.temperature = options.temperature;
-      }
-      if (options.timestampGranularities) {
-        transcriptionParams.timestamp_granularities =
-          options.timestampGranularities;
-      }
-
-      const loader = new OpenAIWhisperAudio(tempFilePath, {
-        transcriptionCreateParams: transcriptionParams,
-      });
-
-      const docs: Document[] = await loader.load();
-      return this.extractTextFromDocs(docs);
-    } finally {
-      FilesUtils.cleanupTempFile(tempFilePath);
-    }
+    return typeof response === "string" ? response : response.text;
   }
 
   static async transcribeFileWithWhisper(
