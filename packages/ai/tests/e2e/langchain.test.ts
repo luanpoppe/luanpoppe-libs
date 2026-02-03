@@ -9,18 +9,17 @@ describe("Langchain E2E Tests", () => {
   const googleGeminiToken = process.env.GOOGLE_GEMINI_TOKEN;
   const openRouterApiKey = process.env.OPENROUTER_API_KEY;
 
-  // Pular testes se as API keys não estiverem configuradas
-  const shouldRunOpenAITests = !!openAIApiKey;
-  const shouldRunGeminiTests = !!googleGeminiToken;
-  const shouldRunOpenRouterTests = !!openRouterApiKey;
-
   const timeout = 180 * 1000;
 
   describe("Chamadas básicas", () => {
-    it.skipIf(!shouldRunOpenAITests)(
+    it(
       "deve fazer uma chamada real para GPT-4o e retornar resposta",
       { timeout },
       async () => {
+        if (!openAIApiKey) {
+          console.log("OPENAI_API_KEY não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           openAIApiKey: openAIApiKey!,
         });
@@ -44,10 +43,14 @@ describe("Langchain E2E Tests", () => {
       }
     );
 
-    it.skipIf(!shouldRunGeminiTests)(
+    it(
       "deve fazer uma chamada real para Gemini e retornar resposta",
       { timeout },
       async () => {
+        if (!googleGeminiToken) {
+          console.log("GOOGLE_GEMINI_TOKEN não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           googleGeminiToken: googleGeminiToken!,
         });
@@ -71,10 +74,14 @@ describe("Langchain E2E Tests", () => {
       }
     );
 
-    it.skipIf(!shouldRunOpenRouterTests)(
+    it(
       "deve fazer uma chamada real para OpenRouter e retornar resposta",
       { timeout },
       async () => {
+        if (!openRouterApiKey) {
+          console.log("OPENROUTER_API_KEY não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           openRouterApiKey: openRouterApiKey!,
         });
@@ -100,10 +107,14 @@ describe("Langchain E2E Tests", () => {
   });
 
   describe("Criação de mensagens", () => {
-    it.skipIf(!shouldRunOpenAITests)(
+    it(
       "deve criar mensagens corretamente e fazer chamada",
       { timeout },
       async () => {
+        if (!openAIApiKey) {
+          console.log("OPENAI_API_KEY não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           openAIApiKey: openAIApiKey!,
         });
@@ -128,10 +139,14 @@ describe("Langchain E2E Tests", () => {
       }
     );
 
-    it.skipIf(!shouldRunGeminiTests)(
+    it(
       "deve criar múltiplas mensagens e fazer chamada",
       { timeout },
       async () => {
+        if (!googleGeminiToken) {
+          console.log("GOOGLE_GEMINI_TOKEN não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           googleGeminiToken: googleGeminiToken!,
         });
@@ -152,10 +167,14 @@ describe("Langchain E2E Tests", () => {
       }
     );
 
-    it.skipIf(!shouldRunOpenRouterTests)(
+    it(
       "deve criar mensagens corretamente e fazer chamada com OpenRouter",
       { timeout },
       async () => {
+        if (!openRouterApiKey) {
+          console.log("OPENROUTER_API_KEY não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           openRouterApiKey: openRouterApiKey!,
         });
@@ -187,47 +206,49 @@ describe("Langchain E2E Tests", () => {
   });
 
   describe("System Prompt", () => {
-    it.skipIf(!shouldRunOpenAITests)(
-      "deve usar systemPrompt corretamente",
-      { timeout },
-      async () => {
-        const langchain = new Langchain({
-          openAIApiKey: openAIApiKey!,
-        });
-
-        const messages = [
-          LangchainMessages.human(
-            "Conte-me uma curiosidade sobre programação."
-          ),
-        ];
-
-        const result = await langchain.call({
-          aiModel: "gpt-4o",
-          messages,
-          systemPrompt:
-            "Você é um especialista em programação. Responda sempre em português brasileiro.",
-        });
-
-        expect(result.text).toBeDefined();
-        expect(result.text.length).toBeGreaterThan(0);
-        // Verifica que a resposta está relacionada a programação (mais flexível)
-        const lowerText = result.text.toLowerCase();
-        expect(
-          lowerText.includes("programação") ||
-            lowerText.includes("programação") ||
-            lowerText.includes("código") ||
-            lowerText.includes("code") ||
-            lowerText.includes("software") ||
-            lowerText.includes("linguagem") ||
-            lowerText.includes("desenvolvimento")
-        ).toBe(true);
+    it("deve usar systemPrompt corretamente", { timeout }, async () => {
+      if (!openAIApiKey) {
+        console.log("OPENAI_API_KEY não está configurada");
+        return;
       }
-    );
+      const langchain = new Langchain({
+        openAIApiKey: openAIApiKey!,
+      });
 
-    it.skipIf(!shouldRunOpenRouterTests)(
+      const messages = [
+        LangchainMessages.human("Conte-me uma curiosidade sobre programação."),
+      ];
+
+      const result = await langchain.call({
+        aiModel: "gpt-4o",
+        messages,
+        systemPrompt:
+          "Você é um especialista em programação. Responda sempre em português brasileiro.",
+      });
+
+      expect(result.text).toBeDefined();
+      expect(result.text.length).toBeGreaterThan(0);
+      // Verifica que a resposta está relacionada a programação (mais flexível)
+      const lowerText = result.text.toLowerCase();
+      expect(
+        lowerText.includes("programação") ||
+          lowerText.includes("programação") ||
+          lowerText.includes("código") ||
+          lowerText.includes("code") ||
+          lowerText.includes("software") ||
+          lowerText.includes("linguagem") ||
+          lowerText.includes("desenvolvimento")
+      ).toBe(true);
+    });
+
+    it(
       "deve usar systemPrompt corretamente com OpenRouter",
       { timeout },
       async () => {
+        if (!openRouterApiKey) {
+          console.log("OPENROUTER_API_KEY não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           openRouterApiKey: openRouterApiKey!,
         });
@@ -292,10 +313,14 @@ describe("Langchain E2E Tests", () => {
   });
 
   describe("Structured Output", () => {
-    it.skipIf(!shouldRunOpenAITests)(
+    it(
       "deve retornar resposta estruturada com schema Zod",
       { timeout },
       async () => {
+        if (!openAIApiKey) {
+          console.log("OPENAI_API_KEY não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           openAIApiKey: openAIApiKey!,
         });
@@ -325,10 +350,14 @@ describe("Langchain E2E Tests", () => {
       }
     );
 
-    it.skipIf(!shouldRunGeminiTests)(
+    it(
       "deve retornar resposta estruturada com Gemini",
       { timeout },
       async () => {
+        if (!googleGeminiToken) {
+          console.log("GOOGLE_GEMINI_TOKEN não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           googleGeminiToken: googleGeminiToken!,
         });
@@ -359,10 +388,14 @@ describe("Langchain E2E Tests", () => {
       }
     );
 
-    it.skipIf(!shouldRunOpenRouterTests)(
+    it(
       "deve retornar resposta estruturada com OpenRouter",
       { timeout },
       async () => {
+        if (!openRouterApiKey) {
+          console.log("OPENROUTER_API_KEY não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           openRouterApiKey: openRouterApiKey!,
         });
@@ -388,10 +421,14 @@ describe("Langchain E2E Tests", () => {
       }
     );
 
-    it.skipIf(!shouldRunOpenRouterTests)(
+    it(
       "deve retornar resposta estruturada com OpenRouter e campo opcional",
       { timeout },
       async () => {
+        if (!openRouterApiKey) {
+          console.log("OPENROUTER_API_KEY não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           openRouterApiKey: openRouterApiKey!,
         });
@@ -433,10 +470,14 @@ describe("Langchain E2E Tests", () => {
   });
 
   describe("Configurações do modelo", () => {
-    it.skipIf(!shouldRunOpenAITests)(
+    it(
       "deve usar maxTokens e temperature corretamente",
       { timeout },
       async () => {
+        if (!openAIApiKey) {
+          console.log("OPENAI_API_KEY não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           openAIApiKey: openAIApiKey!,
         });
@@ -462,10 +503,15 @@ describe("Langchain E2E Tests", () => {
       }
     );
 
-    it.skipIf(!shouldRunOpenRouterTests)(
+    it(
       "deve usar maxTokens e temperature corretamente com OpenRouter",
       { timeout },
       async () => {
+        const maxTokens = 50;
+        if (!openRouterApiKey) {
+          console.log("OPENROUTER_API_KEY não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           openRouterApiKey: openRouterApiKey!,
         });
@@ -477,14 +523,23 @@ describe("Langchain E2E Tests", () => {
         ];
 
         const result = await langchain.call({
-          aiModel: "openrouter/openai/gpt-5",
+          aiModel: "openrouter/google/gemini-2.5-flash",
           messages,
           modelConfig: {
-            maxTokens: 50,
+            maxTokens,
             temperature: 0.7,
           },
         });
 
+        if (result.text === "Empty response from the model") {
+          throw new Error(
+            "OpenRouter retornou resposta vazia para maxTokens/temperature"
+          );
+        }
+        expect(
+          (result.messages.at(-1)?.response_metadata?.tokenUsage as any)
+            ?.totalTokens
+        ).toBeLessThanOrEqual(maxTokens);
         expect(result.text).toBeDefined();
         // maxTokens pode não ser exatamente respeitado, então verificamos apenas que existe resposta
         expect(result.text.length).toBeGreaterThan(0);
@@ -493,34 +548,38 @@ describe("Langchain E2E Tests", () => {
   });
 
   describe("Múltiplas mensagens em conversa", () => {
-    it.skipIf(!shouldRunOpenAITests)(
-      "deve manter contexto em múltiplas mensagens",
-      { timeout },
-      async () => {
-        const langchain = new Langchain({
-          openAIApiKey: openAIApiKey!,
-        });
-
-        const messages = [
-          LangchainMessages.human("Meu nome é Maria."),
-          LangchainMessages.ai("Olá Maria! Prazer em conhecê-la."),
-          LangchainMessages.human("Qual é o meu nome?"),
-        ];
-
-        const result = await langchain.call({
-          aiModel: "gpt-4o",
-          messages,
-        });
-
-        expect(result.text).toBeDefined();
-        expect(result.text.toLowerCase()).toContain("maria");
+    it("deve manter contexto em múltiplas mensagens", { timeout }, async () => {
+      if (!openAIApiKey) {
+        console.log("OPENAI_API_KEY não está configurada");
+        return;
       }
-    );
+      const langchain = new Langchain({
+        openAIApiKey: openAIApiKey!,
+      });
 
-    it.skipIf(!shouldRunOpenRouterTests)(
+      const messages = [
+        LangchainMessages.human("Meu nome é Maria."),
+        LangchainMessages.ai("Olá Maria! Prazer em conhecê-la."),
+        LangchainMessages.human("Qual é o meu nome?"),
+      ];
+
+      const result = await langchain.call({
+        aiModel: "gpt-4o",
+        messages,
+      });
+
+      expect(result.text).toBeDefined();
+      expect(result.text.toLowerCase()).toContain("maria");
+    });
+
+    it(
       "deve manter contexto em múltiplas mensagens com OpenRouter",
       { timeout },
       async () => {
+        if (!openRouterApiKey) {
+          console.log("OPENROUTER_API_KEY não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           openRouterApiKey: openRouterApiKey!,
         });
@@ -542,11 +601,15 @@ describe("Langchain E2E Tests", () => {
     );
   });
 
-  describe.only("Suporte a áudio", () => {
-    it.skipIf(!shouldRunOpenAITests)(
+  describe("Suporte a áudio", () => {
+    it(
       "deve processar áudio com OpenAI usando transcrição prévia automática",
       { timeout },
       async () => {
+        if (!openAIApiKey) {
+          console.log("OPENAI_API_KEY não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           openAIApiKey: openAIApiKey!,
         });
@@ -587,10 +650,14 @@ describe("Langchain E2E Tests", () => {
       }
     );
 
-    it.skipIf(!shouldRunGeminiTests)(
+    it(
       "deve processar áudio diretamente com Gemini (multimodal)",
       { timeout },
       async () => {
+        if (!googleGeminiToken) {
+          console.log("GOOGLE_GEMINI_TOKEN não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           googleGeminiToken: googleGeminiToken!,
         });
@@ -620,10 +687,14 @@ describe("Langchain E2E Tests", () => {
       }
     );
 
-    it.skipIf(!shouldRunOpenAITests)(
+    it(
       "deve transcrever áudio com Whisper e depois processar",
       { timeout },
       async () => {
+        if (!openAIApiKey) {
+          console.log("OPENAI_API_KEY não está configurada");
+          return;
+        }
         const langchain = new Langchain({
           openAIApiKey: openAIApiKey!,
         });

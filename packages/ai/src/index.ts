@@ -59,10 +59,13 @@ export class Langchain {
 
     const response = await agent.invoke({ messages });
 
+    const rawContent = response.messages.at(-1)?.content as string | undefined;
+    const text =
+      typeof rawContent === "string" && rawContent.trim()
+        ? rawContent
+        : "Empty response from the model";
     return {
-      text:
-        (response.messages.at(-1)?.content as string) ??
-        "Empty response from the model",
+      text,
       messages: response.messages,
     };
   }
