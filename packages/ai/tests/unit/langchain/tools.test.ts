@@ -1,4 +1,4 @@
-import { LangchainTools, CreateToolParams } from "../../../src/langchain/tools";
+import { AITools, CreateToolParams } from "../../../src/langchain/tools";
 import { tool } from "langchain";
 import z from "zod";
 
@@ -7,12 +7,12 @@ vi.mock("langchain", () => ({
   tool: vi.fn(),
 }));
 
-describe("LangchainTools", () => {
-  let langchainTools: LangchainTools;
+describe("AITools", () => {
+  let aiTools: AITools;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    langchainTools = new LangchainTools();
+    aiTools = new AITools();
   });
 
   describe("createTool", () => {
@@ -33,7 +33,7 @@ describe("LangchainTools", () => {
       const mockTool = {} as any;
       vi.mocked(tool).mockReturnValue(mockTool);
 
-      const result = langchainTools.createTool(params);
+      const result = aiTools.createTool(params);
 
       expect(tool).toHaveBeenCalledWith(toolFunction, {
         name: "search_tool",
@@ -66,7 +66,7 @@ describe("LangchainTools", () => {
       const mockTool = {} as any;
       vi.mocked(tool).mockReturnValue(mockTool);
 
-      const result = langchainTools.createTool(params);
+      const result = aiTools.createTool(params);
 
       expect(tool).toHaveBeenCalledWith(toolFunction, {
         name: "user_tool",
@@ -91,7 +91,7 @@ describe("LangchainTools", () => {
       const mockTool = {} as any;
       vi.mocked(tool).mockReturnValue(mockTool);
 
-      const result = langchainTools.createTool(params);
+      const result = aiTools.createTool(params);
 
       expect(tool).toHaveBeenCalledWith(toolFunction, {
         name: "simple_tool",
@@ -121,10 +121,12 @@ describe("LangchainTools", () => {
 
       const mockTool1 = {} as any;
       const mockTool2 = {} as any;
-      vi.mocked(tool).mockReturnValueOnce(mockTool1).mockReturnValueOnce(mockTool2);
+      vi.mocked(tool)
+        .mockReturnValueOnce(mockTool1)
+        .mockReturnValueOnce(mockTool2);
 
-      const result1 = langchainTools.createTool(params1);
-      const result2 = langchainTools.createTool(params2);
+      const result1 = aiTools.createTool(params1);
+      const result2 = aiTools.createTool(params2);
 
       expect(tool).toHaveBeenCalledTimes(2);
       expect(result1).toBe(mockTool1);

@@ -11,7 +11,7 @@ export type LLMModelConfig = {
   temperature?: number | undefined;
 };
 
-export class LangchainModels {
+export class AIModels {
   static gpt(params: LLMModelConfig) {
     const { model, apiKey, maxTokens, temperature } = params;
     if (!apiKey)
@@ -47,8 +47,8 @@ export class LangchainModels {
     return new ChatGoogleGenerativeAI(options);
   }
 
-  static openrouter(params: LLMModelConfig & { httpReferer?: string; title?: string }) {
-    const { apiKey, maxTokens, model, temperature, httpReferer, title } = params;
+  static openrouter(params: LLMModelConfig) {
+    const { apiKey, maxTokens, model, temperature } = params;
 
     if (!apiKey)
       throw new Error(

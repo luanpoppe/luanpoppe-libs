@@ -1,7 +1,7 @@
-import { Langchain } from "../../src/index";
-import { LangchainModels } from "../../src/langchain/models";
+import { AI } from "../../src/index";
+import { AIModels } from "../../src/langchain/models";
 import { createAgent } from "langchain";
-import { LangchainMessages } from "../../src/langchain/messages";
+import { AIMessages } from "../../src/langchain/messages";
 import z from "zod";
 
 // Mock das dependências
@@ -11,19 +11,22 @@ vi.mock("langchain", async () => {
     ...actual,
     createAgent: vi.fn(),
     modelRetryMiddleware: vi.fn((config) => ({ type: "retry", ...config })),
-    modelFallbackMiddleware: vi.fn((...models) => ({ type: "fallback", models })),
+    modelFallbackMiddleware: vi.fn((...models) => ({
+      type: "fallback",
+      models,
+    })),
   };
 });
 
 vi.mock("../../src/langchain/models", () => ({
-  LangchainModels: {
+  AIModels: {
     gpt: vi.fn(),
     gemini: vi.fn(),
   },
 }));
 
-describe("Langchain", () => {
-  let langchain: Langchain;
+describe("AI", () => {
+  let ai: AI;
   const mockTokens = {
     openAIApiKey: "test-openai-key",
     googleGeminiToken: "test-gemini-token",
@@ -31,32 +34,30 @@ describe("Langchain", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    langchain = new Langchain(mockTokens);
+    ai = new AI(mockTokens);
   });
 
   describe("constructor", () => {
     it("deve criar uma instância com tokens fornecidos", () => {
-      const instance = new Langchain(mockTokens);
-      expect(instance).toBeInstanceOf(Langchain);
+      const instance = new AI(mockTokens);
+      expect(instance).toBeInstanceOf(AI);
     });
 
     it("deve criar uma instância com apenas openAIApiKey", () => {
-      const instance = new Langchain({ openAIApiKey: "test-key" });
-      expect(instance).toBeInstanceOf(Langchain);
+      const instance = new AI({ openAIApiKey: "test-key" });
+      expect(instance).toBeInstanceOf(AI);
     });
 
     it("deve criar uma instância com apenas googleGeminiToken", () => {
-      const instance = new Langchain({ googleGeminiToken: "test-token" });
-      expect(instance).toBeInstanceOf(Langchain);
+      const instance = new AI({ googleGeminiToken: "test-token" });
+      expect(instance).toBeInstanceOf(AI);
     });
   });
 
   describe("call", () => {
     it("deve chamar o agente e retornar a resposta correta", async () => {
       const mockModel = {} as any;
-      const mockMessages = [
-        LangchainMessages.human("Olá"),
-      ];
+      const mockMessages = [AIMessages.human("Olá")];
       const mockResponse = {
         messages: [
           mockMessages[0],
@@ -64,12 +65,12 @@ describe("Langchain", () => {
         ],
       };
 
-      vi.mocked(LangchainModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
       vi.mocked(createAgent).mockReturnValue({
         invoke: vi.fn().mockResolvedValue(mockResponse),
       } as any);
 
-      const result = await langchain.call({
+      const result = await ai.call({
         aiModel: "gpt-4",
         messages: mockMessages,
       });
@@ -81,7 +82,7 @@ describe("Langchain", () => {
 
     it("deve retornar mensagem padrão quando resposta está vazia", async () => {
       const mockModel = {} as any;
-      const mockMessages = [LangchainMessages.human("Teste")];
+      const mockMessages = [AIMessages.human("Teste")];
       const mockResponse = {
         messages: [
           mockMessages[0],
@@ -89,12 +90,12 @@ describe("Langchain", () => {
         ],
       };
 
-      vi.mocked(LangchainModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
       vi.mocked(createAgent).mockReturnValue({
         invoke: vi.fn().mockResolvedValue(mockResponse),
       } as any);
 
-      const result = await langchain.call({
+      const result = await ai.call({
         aiModel: "gpt-4",
         messages: mockMessages,
       });
@@ -104,17 +105,17 @@ describe("Langchain", () => {
 
     it("deve usar systemPrompt quando fornecido", async () => {
       const mockModel = {} as any;
-      const mockMessages = [LangchainMessages.human("Teste")];
+      const mockMessages = [AIMessages.human("Teste")];
       const mockResponse = {
         messages: [{ content: "Resposta" } as any],
       };
 
-      vi.mocked(LangchainModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
       vi.mocked(createAgent).mockReturnValue({
         invoke: vi.fn().mockResolvedValue(mockResponse),
       } as any);
 
-      await langchain.call({
+      await ai.call({
         aiModel: "gpt-4",
         messages: mockMessages,
         systemPrompt: "Você é um assistente útil",
@@ -126,17 +127,17 @@ describe("Langchain", () => {
 
     it("deve usar maxRetries padrão quando não fornecido", async () => {
       const mockModel = {} as any;
-      const mockMessages = [LangchainMessages.human("Teste")];
+      const mockMessages = [AIMessages.human("Teste")];
       const mockResponse = {
         messages: [{ content: "Resposta" } as any],
       };
 
-      vi.mocked(LangchainModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
       vi.mocked(createAgent).mockReturnValue({
         invoke: vi.fn().mockResolvedValue(mockResponse),
       } as any);
 
-      await langchain.call({
+      await ai.call({
         aiModel: "gpt-4",
         messages: mockMessages,
       });
@@ -148,17 +149,17 @@ describe("Langchain", () => {
 
     it("deve usar maxRetries customizado quando fornecido", async () => {
       const mockModel = {} as any;
-      const mockMessages = [LangchainMessages.human("Teste")];
+      const mockMessages = [AIMessages.human("Teste")];
       const mockResponse = {
         messages: [{ content: "Resposta" } as any],
       };
 
-      vi.mocked(LangchainModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
       vi.mocked(createAgent).mockReturnValue({
         invoke: vi.fn().mockResolvedValue(mockResponse),
       } as any);
 
-      await langchain.call({
+      await ai.call({
         aiModel: "gpt-4",
         messages: mockMessages,
         maxRetries: 5,
@@ -170,22 +171,22 @@ describe("Langchain", () => {
 
     it("deve usar modelo GPT quando aiModel começa com 'gpt'", async () => {
       const mockModel = {} as any;
-      const mockMessages = [LangchainMessages.human("Teste")];
+      const mockMessages = [AIMessages.human("Teste")];
       const mockResponse = {
         messages: [{ content: "Resposta" } as any],
       };
 
-      vi.mocked(LangchainModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
       vi.mocked(createAgent).mockReturnValue({
         invoke: vi.fn().mockResolvedValue(mockResponse),
       } as any);
 
-      await langchain.call({
+      await ai.call({
         aiModel: "gpt-4o",
         messages: mockMessages,
       });
 
-      expect(LangchainModels.gpt).toHaveBeenCalledWith({
+      expect(AIModels.gpt).toHaveBeenCalledWith({
         model: "gpt-4o",
         apiKey: mockTokens.openAIApiKey,
       });
@@ -193,32 +194,32 @@ describe("Langchain", () => {
 
     it("deve usar modelo Gemini quando aiModel começa com 'gemini'", async () => {
       const mockModel = {} as any;
-      const mockMessages = [LangchainMessages.human("Teste")];
+      const mockMessages = [AIMessages.human("Teste")];
       const mockResponse = {
         messages: [{ content: "Resposta" } as any],
       };
 
-      vi.mocked(LangchainModels.gemini).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gemini).mockReturnValue(mockModel);
       vi.mocked(createAgent).mockReturnValue({
         invoke: vi.fn().mockResolvedValue(mockResponse),
       } as any);
 
-      await langchain.call({
+      await ai.call({
         aiModel: "gemini-2.5-flash",
         messages: mockMessages,
       });
 
-      expect(LangchainModels.gemini).toHaveBeenCalledWith({
+      expect(AIModels.gemini).toHaveBeenCalledWith({
         model: "gemini-2.5-flash",
         apiKey: mockTokens.googleGeminiToken,
       });
     });
 
     it("deve lançar erro quando modelo não é suportado", async () => {
-      const mockMessages = [LangchainMessages.human("Teste")];
+      const mockMessages = [AIMessages.human("Teste")];
 
       await expect(
-        langchain.call({
+        ai.call({
           aiModel: "unsupported-model" as any,
           messages: mockMessages,
         })
@@ -227,17 +228,17 @@ describe("Langchain", () => {
 
     it("deve passar modelConfig quando fornecido", async () => {
       const mockModel = {} as any;
-      const mockMessages = [LangchainMessages.human("Teste")];
+      const mockMessages = [AIMessages.human("Teste")];
       const mockResponse = {
         messages: [{ content: "Resposta" } as any],
       };
 
-      vi.mocked(LangchainModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
       vi.mocked(createAgent).mockReturnValue({
         invoke: vi.fn().mockResolvedValue(mockResponse),
       } as any);
 
-      await langchain.call({
+      await ai.call({
         aiModel: "gpt-4",
         messages: mockMessages,
         modelConfig: {
@@ -246,7 +247,7 @@ describe("Langchain", () => {
         },
       });
 
-      expect(LangchainModels.gpt).toHaveBeenCalledWith({
+      expect(AIModels.gpt).toHaveBeenCalledWith({
         model: "gpt-4",
         apiKey: mockTokens.openAIApiKey,
         maxTokens: 2000,
@@ -258,7 +259,7 @@ describe("Langchain", () => {
   describe("callStructuredOutput", () => {
     it("deve chamar o agente com outputSchema e retornar resposta estruturada", async () => {
       const mockModel = {} as any;
-      const mockMessages = [LangchainMessages.human("Teste")];
+      const mockMessages = [AIMessages.human("Teste")];
       const outputSchema = z.object({
         name: z.string(),
         age: z.number(),
@@ -268,12 +269,12 @@ describe("Langchain", () => {
         structuredResponse: mockStructuredResponse,
       };
 
-      vi.mocked(LangchainModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
       vi.mocked(createAgent).mockReturnValue({
         invoke: vi.fn().mockResolvedValue(mockResponse),
       } as any);
 
-      const result = await langchain.callStructuredOutput({
+      const result = await ai.callStructuredOutput({
         aiModel: "gpt-4",
         messages: mockMessages,
         outputSchema,
@@ -285,14 +286,14 @@ describe("Langchain", () => {
 
     it("deve validar o schema e lançar erro se inválido", async () => {
       const mockModel = {} as any;
-      const mockMessages = [LangchainMessages.human("Teste")];
+      const mockMessages = [AIMessages.human("Teste")];
       const outputSchema = z.object({
         name: z.string(),
         age: z.number(),
       });
       const mockStructuredResponse = { name: "João", age: "30" }; // age deveria ser number
 
-      vi.mocked(LangchainModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
       vi.mocked(createAgent).mockReturnValue({
         invoke: vi.fn().mockResolvedValue({
           structuredResponse: mockStructuredResponse,
@@ -300,7 +301,7 @@ describe("Langchain", () => {
       } as any);
 
       await expect(
-        langchain.callStructuredOutput({
+        ai.callStructuredOutput({
           aiModel: "gpt-4",
           messages: mockMessages,
           outputSchema,
@@ -312,15 +313,15 @@ describe("Langchain", () => {
   describe("getRawAgent", () => {
     it("deve retornar um agente sem outputSchema", () => {
       const mockModel = {} as any;
-      const mockMessages = [LangchainMessages.human("Teste")];
+      const mockMessages = [AIMessages.human("Teste")];
       const mockAgent = {
         invoke: vi.fn(),
       };
 
-      vi.mocked(LangchainModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
       vi.mocked(createAgent).mockReturnValue(mockAgent as any);
 
-      const result = langchain.getRawAgent({
+      const result = ai.getRawAgent({
         aiModel: "gpt-4",
         messages: mockMessages,
       });
@@ -331,16 +332,16 @@ describe("Langchain", () => {
 
     it("deve retornar um agente com outputSchema quando fornecido", () => {
       const mockModel = {} as any;
-      const mockMessages = [LangchainMessages.human("Teste")];
+      const mockMessages = [AIMessages.human("Teste")];
       const outputSchema = z.object({ result: z.string() });
       const mockAgent = {
         invoke: vi.fn(),
       };
 
-      vi.mocked(LangchainModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
       vi.mocked(createAgent).mockReturnValue(mockAgent as any);
 
-      const result = langchain.getRawAgent(
+      const result = ai.getRawAgent(
         {
           aiModel: "gpt-4",
           messages: mockMessages,
@@ -350,6 +351,25 @@ describe("Langchain", () => {
 
       expect(createAgent).toHaveBeenCalled();
       expect(result.agent).toBe(mockAgent);
+    });
+  });
+
+  describe("compatibilidade com aliases Langchain (deprecated)", () => {
+    it("deve permitir importar Langchain como alias de AI", async () => {
+      const { Langchain } = await import("../../src/index.js");
+      expect(Langchain).toBe(AI);
+    });
+
+    it("deve permitir importar LangchainMessages como alias de AIMessages", async () => {
+      const { LangchainMessages } = await import("../../src/index.js");
+      const { AIMessages } = await import("../../src/index.js");
+      expect(LangchainMessages).toBe(AIMessages);
+    });
+
+    it("deve permitir importar LangchainModels como alias de AIModels", async () => {
+      const { LangchainModels } = await import("../../src/index.js");
+      const { AIModels } = await import("../../src/index.js");
+      expect(LangchainModels).toBe(AIModels);
     });
   });
 });

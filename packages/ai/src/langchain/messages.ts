@@ -1,7 +1,7 @@
 import { SystemMessage, HumanMessage, AIMessage } from "langchain";
 import { AudioUtils } from "../utils/audio-utils";
 import type { AudioBuffer, AudioMimeType } from "../@types/audio";
-import { LangchainAudioTranscription } from "./audio-transcription";
+import { AIAudioTranscription } from "./audio-transcription";
 
 export type MessageInput = SystemMessage | HumanMessage | AIMessage;
 
@@ -24,7 +24,7 @@ export type HumanMessageWithAudioOptions = {
   openAIApiKey?: string;
 };
 
-export class LangchainMessages {
+export class AIMessages {
   static system(message: string): SystemMessage {
     return new SystemMessage(message);
   }
@@ -121,12 +121,11 @@ export class LangchainMessages {
         ? { format: mimeType }
         : { language: "pt" };
 
-      const transcribedText =
-        await LangchainAudioTranscription.transcribeWithWhisper(
-          audioBuffer,
-          transcriptionOptions,
-          openAIApiKey
-        );
+      const transcribedText = await AIAudioTranscription.transcribeWithWhisper(
+        audioBuffer,
+        transcriptionOptions,
+        openAIApiKey
+      );
 
       // Combina o texto original (se fornecido) com a transcrição
       const finalText = text

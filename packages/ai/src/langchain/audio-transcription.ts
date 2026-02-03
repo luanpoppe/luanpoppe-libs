@@ -39,7 +39,7 @@ function toBuffer(audioBuffer: AudioBuffer): Buffer {
   return Buffer.from(audioBuffer as Uint8Array);
 }
 
-export class LangchainAudioTranscription {
+export class AIAudioTranscription {
   static async transcribeWithWhisper(
     audioBuffer: AudioBuffer,
     options: WhisperTranscriptionOptions = {},

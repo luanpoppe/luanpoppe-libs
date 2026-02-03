@@ -1,8 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
-import { Langchain } from "../../src/index";
-import { LangchainMessages } from "../../src/langchain/messages";
-import { LangchainAudioTranscription } from "../../src/langchain/audio-transcription";
+import { AI } from "../../src/index";
+import { AIMessages } from "../../src/langchain/messages";
+import { AIAudioTranscription } from "../../src/langchain/audio-transcription";
 import "dotenv/config";
 
 const AUDIO_FIXTURE_PATH = path.join(
@@ -13,7 +13,7 @@ const AUDIO_FIXTURE_PATH = path.join(
   "audio-teste-saudacao.mp3"
 );
 
-describe("Langchain Audio E2E Tests", () => {
+describe("AI Audio E2E Tests", () => {
   const openAIApiKey = process.env.OPENAI_API_KEY;
   const googleGeminiToken = process.env.GOOGLE_GEMINI_TOKEN;
   const openRouterApiKey = process.env.OPENROUTER_API_KEY;
@@ -29,12 +29,12 @@ describe("Langchain Audio E2E Tests", () => {
           console.log("OPENAI_API_KEY não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openAIApiKey: openAIApiKey!,
         });
 
         const audioBuffer = fs.readFileSync(AUDIO_FIXTURE_PATH);
-        const message = await LangchainMessages.humanAudio({
+        const message = await AIMessages.humanAudio({
           audio: {
             buffer: audioBuffer,
             filename: "audio-teste-saudacao.mp3",
@@ -44,7 +44,7 @@ describe("Langchain Audio E2E Tests", () => {
           openAIApiKey: openAIApiKey!,
         });
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "gpt-4o",
           messages: [message],
         });
@@ -66,13 +66,13 @@ describe("Langchain Audio E2E Tests", () => {
           console.log("GOOGLE_GEMINI_TOKEN não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           googleGeminiToken: googleGeminiToken!,
         });
 
         const audioBuffer = fs.readFileSync(AUDIO_FIXTURE_PATH);
 
-        const message = await LangchainMessages.humanAudio({
+        const message = await AIMessages.humanAudio({
           audio: {
             buffer: audioBuffer,
             mimeType: "audio/mp3",
@@ -82,7 +82,7 @@ describe("Langchain Audio E2E Tests", () => {
           provider: "gemini",
         });
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "gemini-2.5-flash",
           messages: [message],
         });
@@ -102,23 +102,23 @@ describe("Langchain Audio E2E Tests", () => {
           console.log("OPENAI_API_KEY não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openAIApiKey: openAIApiKey!,
         });
 
         const audioBuffer = fs.readFileSync(AUDIO_FIXTURE_PATH);
         const transcribedText =
-          await LangchainAudioTranscription.transcribeWithWhisper(
+          await AIAudioTranscription.transcribeWithWhisper(
             audioBuffer,
             { languageIn2Digits: "pt" },
             openAIApiKey!
           );
 
-        const message = LangchainMessages.human(
+        const message = AIMessages.human(
           `Áudio transcrito: ${transcribedText}. Responda apenas com 'Transcrição recebida'`
         );
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "gpt-4o",
           messages: [message],
         });
@@ -140,13 +140,13 @@ describe("Langchain Audio E2E Tests", () => {
           console.log("OPENROUTER_API_KEY não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openRouterApiKey: openRouterApiKey!,
         });
 
         const audioBuffer = fs.readFileSync(AUDIO_FIXTURE_PATH);
 
-        const message = await LangchainMessages.humanAudio({
+        const message = await AIMessages.humanAudio({
           audio: {
             buffer: audioBuffer,
             mimeType: "audio/mp3",
@@ -156,7 +156,7 @@ describe("Langchain Audio E2E Tests", () => {
           provider: "gemini",
         });
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "openrouter/google/gemini-2.5-flash",
           messages: [message],
         });
@@ -178,12 +178,12 @@ describe("Langchain Audio E2E Tests", () => {
           );
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openRouterApiKey: openRouterApiKey!,
         });
 
         const audioBuffer = fs.readFileSync(AUDIO_FIXTURE_PATH);
-        const message = await LangchainMessages.humanAudio({
+        const message = await AIMessages.humanAudio({
           audio: {
             buffer: audioBuffer,
             filename: "audio-teste-saudacao.mp3",
@@ -193,7 +193,7 @@ describe("Langchain Audio E2E Tests", () => {
           openAIApiKey: openAIApiKey!,
         });
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "openrouter/openai/gpt-5",
           messages: [message],
         });

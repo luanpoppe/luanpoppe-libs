@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { LangchainAudioTranscription } from "../../../src/langchain/audio-transcription.js";
+import { AIAudioTranscription } from "../../../src/langchain/audio-transcription.js";
 import * as fs from "fs";
 
 const mockTranscriptionsCreate = vi.fn().mockResolvedValue({
@@ -39,7 +39,7 @@ vi.mock("fs", () => {
   };
 });
 
-describe("LangchainAudioTranscription", () => {
+describe("AIAudioTranscription", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTranscriptionsCreate.mockResolvedValue({
@@ -51,7 +51,7 @@ describe("LangchainAudioTranscription", () => {
     it("deve transcrever áudio usando Whisper", async () => {
       const audioBuffer = Buffer.from("fake audio data");
 
-      const result = await LangchainAudioTranscription.transcribeWithWhisper(
+      const result = await AIAudioTranscription.transcribeWithWhisper(
         audioBuffer
       );
 
@@ -67,7 +67,7 @@ describe("LangchainAudioTranscription", () => {
     it("deve aceitar opções de transcrição", async () => {
       const audioBuffer = Buffer.from("fake audio data");
 
-      await LangchainAudioTranscription.transcribeWithWhisper(audioBuffer, {
+      await AIAudioTranscription.transcribeWithWhisper(audioBuffer, {
         languageIn2Digits: "pt",
         responseFormat: "json",
       });
@@ -83,7 +83,7 @@ describe("LangchainAudioTranscription", () => {
     it("deve aceitar modelo customizado", async () => {
       const audioBuffer = Buffer.from("fake audio data");
 
-      await LangchainAudioTranscription.transcribeWithWhisper(audioBuffer, {
+      await AIAudioTranscription.transcribeWithWhisper(audioBuffer, {
         model: "gpt-4o-transcribe",
       });
 
@@ -97,7 +97,7 @@ describe("LangchainAudioTranscription", () => {
     it("deve usar whisper-1 como padrão quando model não é informado", async () => {
       const audioBuffer = Buffer.from("fake audio data");
 
-      await LangchainAudioTranscription.transcribeWithWhisper(audioBuffer);
+      await AIAudioTranscription.transcribeWithWhisper(audioBuffer);
 
       expect(mockTranscriptionsCreate).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -109,7 +109,7 @@ describe("LangchainAudioTranscription", () => {
     it("deve aceitar formato de áudio nas opções (extensão)", async () => {
       const audioBuffer = Buffer.from("fake wav audio data");
 
-      const result = await LangchainAudioTranscription.transcribeWithWhisper(
+      const result = await AIAudioTranscription.transcribeWithWhisper(
         audioBuffer,
         { format: "wav" }
       );
@@ -129,7 +129,7 @@ describe("LangchainAudioTranscription", () => {
     it("deve aceitar MIME type como formato", async () => {
       const audioBuffer = Buffer.from("fake webm audio data");
 
-      const result = await LangchainAudioTranscription.transcribeWithWhisper(
+      const result = await AIAudioTranscription.transcribeWithWhisper(
         audioBuffer,
         { format: "audio/webm" }
       );
@@ -148,7 +148,7 @@ describe("LangchainAudioTranscription", () => {
       const audioBuffer = Buffer.from("fake audio data");
 
       await expect(
-        LangchainAudioTranscription.transcribeWithWhisper(audioBuffer)
+        AIAudioTranscription.transcribeWithWhisper(audioBuffer)
       ).rejects.toThrow("Erro de transcrição");
     });
   });
@@ -157,8 +157,9 @@ describe("LangchainAudioTranscription", () => {
     it("deve transcrever arquivo usando Whisper", async () => {
       const filePath = "/path/to/audio.mp3";
 
-      const result =
-        await LangchainAudioTranscription.transcribeFileWithWhisper(filePath);
+      const result = await AIAudioTranscription.transcribeFileWithWhisper(
+        filePath
+      );
 
       expect(result).toBe("Texto transcrito do áudio");
       expect(vi.mocked(fs.readFileSync)).toHaveBeenCalledWith(filePath);
@@ -168,8 +169,9 @@ describe("LangchainAudioTranscription", () => {
     it("deve extrair formato da extensão do arquivo quando format não é informado", async () => {
       const filePath = "/path/to/audio.wav";
 
-      const result =
-        await LangchainAudioTranscription.transcribeFileWithWhisper(filePath);
+      const result = await AIAudioTranscription.transcribeFileWithWhisper(
+        filePath
+      );
 
       expect(result).toBe("Texto transcrito do áudio");
       const createCall = mockTranscriptionsCreate.mock.calls[0]?.[0];
@@ -181,9 +183,7 @@ describe("LangchainAudioTranscription", () => {
       vi.mocked(fs.existsSync).mockReturnValue(false);
 
       await expect(
-        LangchainAudioTranscription.transcribeFileWithWhisper(
-          "/nonexistent.mp3"
-        )
+        AIAudioTranscription.transcribeFileWithWhisper("/nonexistent.mp3")
       ).rejects.toThrow("Arquivo não encontrado");
     });
   });

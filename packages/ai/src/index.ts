@@ -1,4 +1,4 @@
-import { LangchainModels, LLMModelConfig } from "./langchain/models";
+import { AIModels, LLMModelConfig } from "./langchain/models";
 import { AIModelNames } from "./@types/model-names";
 import z from "zod";
 import { MessageInput } from "./langchain/messages";
@@ -10,16 +10,16 @@ import {
   modelRetryMiddleware,
 } from "langchain";
 import { ClientTool, ServerTool } from "@langchain/core/tools";
-import { LangchainMessages } from "./langchain/messages";
-import { LangchainTools } from "./langchain/tools";
+import { AIMessages } from "./langchain/messages";
+import { AITools } from "./langchain/tools";
 
-type LangchainConstructor = {
+type AIConstructor = {
   googleGeminiToken?: string;
   openAIApiKey?: string;
   openRouterApiKey?: string;
 };
 
-export type LangchainCallParams = {
+export type AICallParams = {
   agent?: {
     middleware?: AgentMiddleware[];
     tools?: (ServerTool | ClientTool)[];
@@ -33,24 +33,24 @@ export type LangchainCallParams = {
   maxRetries?: number;
 };
 
-export type LangchainCallReturn = Promise<{
+export type AICallReturn = Promise<{
   text: string;
   messages: BaseMessage[];
 }>;
 
-export type LangchainCallStructuredOutputParams<T extends z.ZodSchema> =
-  LangchainCallParams & {
+export type AICallStructuredOutputParams<T extends z.ZodSchema> =
+  AICallParams & {
     outputSchema: T;
   };
 
-export type LangchainCallStructuredOutputReturn<T> = Promise<{
+export type AICallStructuredOutputReturn<T> = Promise<{
   response: z.infer<T>;
 }>;
 
-export class Langchain {
-  constructor(private tokens: LangchainConstructor) {}
+export class AI {
+  constructor(private tokens: AIConstructor) {}
 
-  async call(params: LangchainCallParams): LangchainCallReturn {
+  async call(params: AICallParams): AICallReturn {
     const { messages } = params;
 
     const agent = createAgent({
@@ -71,8 +71,8 @@ export class Langchain {
   }
 
   async callStructuredOutput<T extends z.ZodSchema>(
-    params: LangchainCallStructuredOutputParams<T>
-  ): LangchainCallStructuredOutputReturn<typeof params.outputSchema> {
+    params: AICallStructuredOutputParams<T>
+  ): AICallStructuredOutputReturn<typeof params.outputSchema> {
     const { outputSchema, messages, aiModel } = params;
 
     // Normaliza o schema para compatibilidade com OpenAI/OpenRouter
@@ -138,7 +138,7 @@ export class Langchain {
   }
 
   getRawAgent(
-    params: LangchainCallParams,
+    params: AICallParams,
     outputSchema?: z.ZodSchema | undefined
   ): { agent: ReturnType<typeof createAgent> } {
     const agent = createAgent({
@@ -149,7 +149,7 @@ export class Langchain {
     return { agent };
   }
 
-  private getModel(params: LangchainCallParams) {
+  private getModel(params: AICallParams) {
     const { aiModel, modelConfig } = params;
 
     const config: LLMModelConfig = {
@@ -161,18 +161,18 @@ export class Langchain {
     if (aiModel.startsWith("gpt")) {
       config.apiKey = this.tokens.openAIApiKey;
 
-      return LangchainModels.gpt(config);
+      return AIModels.gpt(config);
     }
 
     if (aiModel.startsWith("gemini")) {
       config.apiKey = this.tokens.googleGeminiToken;
 
-      return LangchainModels.gemini(config);
+      return AIModels.gemini(config);
     }
 
     if (aiModel.startsWith("openrouter/")) {
       const modelName = aiModel.replace(/^openrouter\//, "");
-      return LangchainModels.openrouter({
+      return AIModels.openrouter({
         ...config,
         model: modelName,
         apiKey: this.tokens.openRouterApiKey,
@@ -183,7 +183,7 @@ export class Langchain {
   }
 
   private standardAgent(
-    params: LangchainCallParams
+    params: AICallParams
   ): Parameters<typeof createAgent>[0] {
     const { systemPrompt, maxRetries = 3 } = params;
 
@@ -212,8 +212,8 @@ export class Langchain {
   }
 }
 
-export { LangchainModels, LangchainMessages, LangchainTools };
-export { LangchainAudioTranscription } from "./langchain/audio-transcription";
+export { AIModels, AIMessages, AITools };
+export { AIAudioTranscription } from "./langchain/audio-transcription";
 export { AudioUtils } from "./utils/audio-utils";
 export type { AudioBuffer, AudioMimeType } from "./@types/audio";
 export type {
@@ -224,3 +224,25 @@ export type {
   WhisperModel,
   WhisperTranscriptionOptions,
 } from "./langchain/audio-transcription";
+
+// Aliases para compatibilidade (deprecated - serão removidos em 2.0.0)
+/** @deprecated Use AI instead. Will be removed in 2.0.0 */
+export { AI as Langchain };
+/** @deprecated Use AICallParams instead. Will be removed in 2.0.0 */
+export type LangchainCallParams = AICallParams;
+/** @deprecated Use AICallReturn instead. Will be removed in 2.0.0 */
+export type LangchainCallReturn = AICallReturn;
+/** @deprecated Use AICallStructuredOutputParams instead. Will be removed in 2.0.0 */
+export type LangchainCallStructuredOutputParams<T extends z.ZodSchema> =
+  AICallStructuredOutputParams<T>;
+/** @deprecated Use AICallStructuredOutputReturn instead. Will be removed in 2.0.0 */
+export type LangchainCallStructuredOutputReturn<T> =
+  AICallStructuredOutputReturn<T>;
+/** @deprecated Use AIModels instead. Will be removed in 2.0.0 */
+export { AIModels as LangchainModels } from "./langchain/models";
+/** @deprecated Use AIMessages instead. Will be removed in 2.0.0 */
+export { AIMessages as LangchainMessages } from "./langchain/messages";
+/** @deprecated Use AITools instead. Will be removed in 2.0.0 */
+export { AITools as LangchainTools } from "./langchain/tools";
+/** @deprecated Use AIAudioTranscription instead. Will be removed in 2.0.0 */
+export { AIAudioTranscription as LangchainAudioTranscription } from "./langchain/audio-transcription";

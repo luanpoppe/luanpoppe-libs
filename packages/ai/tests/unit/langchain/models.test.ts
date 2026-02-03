@@ -1,4 +1,4 @@
-import { LangchainModels, LLMModelConfig } from "../../../src/langchain/models";
+import { AIModels, LLMModelConfig } from "../../../src/langchain/models";
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
@@ -11,7 +11,7 @@ vi.mock("@langchain/google-genai", () => ({
   ChatGoogleGenerativeAI: vi.fn(),
 }));
 
-describe("LangchainModels", () => {
+describe("AIModels", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -23,7 +23,7 @@ describe("LangchainModels", () => {
         apiKey: "test-api-key",
       };
 
-      LangchainModels.gpt(config);
+      AIModels.gpt(config);
 
       expect(ChatOpenAI).toHaveBeenCalledWith({
         model: "gpt-4",
@@ -38,7 +38,7 @@ describe("LangchainModels", () => {
         maxTokens: 1000,
       };
 
-      LangchainModels.gpt(config);
+      AIModels.gpt(config);
 
       expect(ChatOpenAI).toHaveBeenCalledWith({
         model: "gpt-4o",
@@ -54,7 +54,7 @@ describe("LangchainModels", () => {
         temperature: 0.7,
       };
 
-      LangchainModels.gpt(config);
+      AIModels.gpt(config);
 
       expect(ChatOpenAI).toHaveBeenCalledWith({
         model: "gpt-4",
@@ -71,7 +71,7 @@ describe("LangchainModels", () => {
         temperature: 0.5,
       };
 
-      LangchainModels.gpt(config);
+      AIModels.gpt(config);
 
       expect(ChatOpenAI).toHaveBeenCalledWith({
         model: "gpt-4o",
@@ -86,7 +86,7 @@ describe("LangchainModels", () => {
         model: "gpt-4",
       };
 
-      expect(() => LangchainModels.gpt(config)).toThrow(
+      expect(() => AIModels.gpt(config)).toThrow(
         "OpenAI API key is not passed in the model parameters"
       );
     });
@@ -97,7 +97,7 @@ describe("LangchainModels", () => {
         apiKey: undefined,
       };
 
-      expect(() => LangchainModels.gpt(config)).toThrow(
+      expect(() => AIModels.gpt(config)).toThrow(
         "OpenAI API key is not passed in the model parameters"
       );
     });
@@ -110,7 +110,7 @@ describe("LangchainModels", () => {
         apiKey: "test-api-key",
       };
 
-      LangchainModels.gemini(config);
+      AIModels.gemini(config);
 
       expect(ChatGoogleGenerativeAI).toHaveBeenCalledWith({
         model: "gemini-2.5-flash",
@@ -125,7 +125,7 @@ describe("LangchainModels", () => {
         maxTokens: 1500,
       };
 
-      LangchainModels.gemini(config);
+      AIModels.gemini(config);
 
       expect(ChatGoogleGenerativeAI).toHaveBeenCalledWith({
         model: "gemini-2.5-pro",
@@ -141,7 +141,7 @@ describe("LangchainModels", () => {
         temperature: 0.8,
       };
 
-      LangchainModels.gemini(config);
+      AIModels.gemini(config);
 
       expect(ChatGoogleGenerativeAI).toHaveBeenCalledWith({
         model: "gemini-3-flash",
@@ -158,7 +158,7 @@ describe("LangchainModels", () => {
         temperature: 0.6,
       };
 
-      LangchainModels.gemini(config);
+      AIModels.gemini(config);
 
       expect(ChatGoogleGenerativeAI).toHaveBeenCalledWith({
         model: "gemini-3-pro",
@@ -173,7 +173,7 @@ describe("LangchainModels", () => {
         model: "gemini-2.5-flash",
       };
 
-      expect(() => LangchainModels.gemini(config)).toThrow(
+      expect(() => AIModels.gemini(config)).toThrow(
         "Google Gemini API key is not passed in the model parameters"
       );
     });
@@ -184,7 +184,7 @@ describe("LangchainModels", () => {
         apiKey: undefined,
       };
 
-      expect(() => LangchainModels.gemini(config)).toThrow(
+      expect(() => AIModels.gemini(config)).toThrow(
         "Google Gemini API key is not passed in the model parameters"
       );
     });

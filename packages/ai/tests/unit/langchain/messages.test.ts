@@ -1,16 +1,16 @@
-import { LangchainMessages } from "../../../src/langchain/messages";
+import { AIMessages } from "../../../src/langchain/messages";
 import { SystemMessage, HumanMessage, AIMessage } from "langchain";
 
 // Mock do langchain
 vi.mock("langchain", () => {
   class MockSystemMessage {
-    constructor(public content: string) { }
+    constructor(public content: string) {}
   }
   class MockHumanMessage {
-    constructor(public content: string | Array<any>) { }
+    constructor(public content: string | Array<any>) {}
   }
   class MockAIMessage {
-    constructor(public content: string) { }
+    constructor(public content: string) {}
   }
   function SystemMessageConstructor(content: string) {
     return new MockSystemMessage(content);
@@ -28,7 +28,7 @@ vi.mock("langchain", () => {
   };
 });
 
-describe("LangchainMessages", () => {
+describe("AIMessages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -37,7 +37,7 @@ describe("LangchainMessages", () => {
     it("deve criar uma SystemMessage com a mensagem fornecida", () => {
       const message = "Esta é uma mensagem do sistema";
 
-      const result = LangchainMessages.system(message);
+      const result = AIMessages.system(message);
 
       expect(result).toBeDefined();
       expect(result.content).toBe(message);
@@ -47,7 +47,7 @@ describe("LangchainMessages", () => {
     it("deve criar uma SystemMessage com string vazia", () => {
       const message = "";
 
-      const result = LangchainMessages.system(message);
+      const result = AIMessages.system(message);
 
       expect(result).toBeDefined();
       expect(result.content).toBe("");
@@ -59,7 +59,7 @@ describe("LangchainMessages", () => {
     it("deve criar uma HumanMessage com a mensagem fornecida", () => {
       const message = "Esta é uma mensagem do usuário";
 
-      const result = LangchainMessages.human(message);
+      const result = AIMessages.human(message);
 
       expect(result).toBeDefined();
       expect(result.content).toBe(message);
@@ -69,7 +69,7 @@ describe("LangchainMessages", () => {
     it("deve criar uma HumanMessage com string vazia", () => {
       const message = "";
 
-      const result = LangchainMessages.human(message);
+      const result = AIMessages.human(message);
 
       expect(result).toBeDefined();
       expect(result.content).toBe("");
@@ -81,7 +81,7 @@ describe("LangchainMessages", () => {
     it("deve criar uma AIMessage com a mensagem fornecida", () => {
       const message = "Esta é uma mensagem da IA";
 
-      const result = LangchainMessages.ai(message);
+      const result = AIMessages.ai(message);
 
       expect(result).toBeDefined();
       expect(result.content).toBe(message);
@@ -91,7 +91,7 @@ describe("LangchainMessages", () => {
     it("deve criar uma AIMessage com string vazia", () => {
       const message = "";
 
-      const result = LangchainMessages.ai(message);
+      const result = AIMessages.ai(message);
 
       expect(result).toBeDefined();
       expect(result.content).toBe("");
@@ -104,7 +104,7 @@ describe("LangchainMessages", () => {
       const audioBuffer = Buffer.from("fake audio data");
       const text = "Transcreva este áudio";
 
-      const result = await LangchainMessages.humanAudio({
+      const result = await AIMessages.humanAudio({
         audio: {
           buffer: audioBuffer,
           mimeType: "audio/mp3",
@@ -130,7 +130,7 @@ describe("LangchainMessages", () => {
     it("deve criar uma HumanMessage apenas com áudio (sem texto)", async () => {
       const audioBuffer = Buffer.from("fake audio data");
 
-      const result = await LangchainMessages.humanAudio({
+      const result = await AIMessages.humanAudio({
         audio: {
           buffer: audioBuffer,
         },
@@ -147,7 +147,7 @@ describe("LangchainMessages", () => {
     it("deve detectar MIME type automaticamente pela extensão", async () => {
       const audioBuffer = Buffer.from("fake audio data");
 
-      const result = await LangchainMessages.humanAudio({
+      const result = await AIMessages.humanAudio({
         audio: {
           buffer: audioBuffer,
           filename: "audio.wav",
@@ -162,7 +162,7 @@ describe("LangchainMessages", () => {
     it("deve usar MIME type fornecido mesmo com extensão", async () => {
       const audioBuffer = Buffer.from("fake audio data");
 
-      const result = await LangchainMessages.humanAudio({
+      const result = await AIMessages.humanAudio({
         audio: {
           buffer: audioBuffer,
           mimeType: "audio/mp4",

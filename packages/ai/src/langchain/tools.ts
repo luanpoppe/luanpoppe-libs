@@ -8,7 +8,7 @@ export type CreateToolParams = {
   schema: z.ZodSchema;
 };
 
-export class LangchainTools {
+export class AITools {
   createTool(params: CreateToolParams) {
     const { toolFunction } = params;
     const { name, description, schema } = params;

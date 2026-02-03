@@ -1,9 +1,9 @@
-import { Langchain } from "../../src/index";
-import { LangchainMessages } from "../../src/langchain/messages";
+import { AI } from "../../src/index";
+import { AIMessages } from "../../src/langchain/messages";
 import z from "zod";
 import "dotenv/config";
 
-describe("Langchain E2E Tests", () => {
+describe("AI E2E Tests", () => {
   const openAIApiKey = process.env.OPENAI_API_KEY;
   const googleGeminiToken = process.env.GOOGLE_GEMINI_TOKEN;
   const openRouterApiKey = process.env.OPENROUTER_API_KEY;
@@ -19,17 +19,17 @@ describe("Langchain E2E Tests", () => {
           console.log("OPENAI_API_KEY não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openAIApiKey: openAIApiKey!,
         });
 
         const messages = [
-          LangchainMessages.human(
+          AIMessages.human(
             "Olá! Responda apenas com 'Teste E2E GPT funcionando'"
           ),
         ];
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "gpt-4o",
           messages,
         });
@@ -50,17 +50,17 @@ describe("Langchain E2E Tests", () => {
           console.log("GOOGLE_GEMINI_TOKEN não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           googleGeminiToken: googleGeminiToken!,
         });
 
         const messages = [
-          LangchainMessages.human(
+          AIMessages.human(
             "Olá! Responda apenas com 'Teste E2E Gemini funcionando'"
           ),
         ];
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "gemini-2.5-flash",
           messages,
         });
@@ -81,17 +81,17 @@ describe("Langchain E2E Tests", () => {
           console.log("OPENROUTER_API_KEY não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openRouterApiKey: openRouterApiKey!,
         });
 
         const messages = [
-          LangchainMessages.human(
+          AIMessages.human(
             "Olá! Responda apenas com 'Teste E2E OpenRouter funcionando'"
           ),
         ];
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "openrouter/openai/gpt-5",
           messages,
         });
@@ -114,20 +114,18 @@ describe("Langchain E2E Tests", () => {
           console.log("OPENAI_API_KEY não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openAIApiKey: openAIApiKey!,
         });
 
-        const systemMessage = LangchainMessages.system(
+        const systemMessage = AIMessages.system(
           "Você é um assistente útil que responde de forma concisa."
         );
-        const humanMessage = LangchainMessages.human(
-          "Qual é a capital do Brasil?"
-        );
+        const humanMessage = AIMessages.human("Qual é a capital do Brasil?");
 
         const messages = [systemMessage, humanMessage];
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "gpt-4o",
           messages,
         });
@@ -146,16 +144,16 @@ describe("Langchain E2E Tests", () => {
           console.log("GOOGLE_GEMINI_TOKEN não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           googleGeminiToken: googleGeminiToken!,
         });
 
         const messages = [
-          LangchainMessages.system("Você é um assistente matemático."),
-          LangchainMessages.human("Quanto é 2 + 2?"),
+          AIMessages.system("Você é um assistente matemático."),
+          AIMessages.human("Quanto é 2 + 2?"),
         ];
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "gemini-2.5-flash",
           messages,
         });
@@ -174,20 +172,18 @@ describe("Langchain E2E Tests", () => {
           console.log("OPENROUTER_API_KEY não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openRouterApiKey: openRouterApiKey!,
         });
 
-        const systemMessage = LangchainMessages.system(
+        const systemMessage = AIMessages.system(
           "Você é um assistente útil que responde de forma concisa."
         );
-        const humanMessage = LangchainMessages.human(
-          "Qual é a capital da França?"
-        );
+        const humanMessage = AIMessages.human("Qual é a capital da França?");
 
         const messages = [systemMessage, humanMessage];
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "openrouter/openai/gpt-5",
           messages,
         });
@@ -210,15 +206,15 @@ describe("Langchain E2E Tests", () => {
         console.log("OPENAI_API_KEY não está configurada");
         return;
       }
-      const langchain = new Langchain({
+      const ai = new AI({
         openAIApiKey: openAIApiKey!,
       });
 
       const messages = [
-        LangchainMessages.human("Conte-me uma curiosidade sobre programação."),
+        AIMessages.human("Conte-me uma curiosidade sobre programação."),
       ];
 
-      const result = await langchain.call({
+      const result = await ai.call({
         aiModel: "gpt-4o",
         messages,
         systemPrompt:
@@ -248,15 +244,15 @@ describe("Langchain E2E Tests", () => {
           console.log("OPENROUTER_API_KEY não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openRouterApiKey: openRouterApiKey!,
         });
 
         const messages = [
-          LangchainMessages.human("Conte-me uma curiosidade sobre ciência."),
+          AIMessages.human("Conte-me uma curiosidade sobre ciência."),
         ];
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "openrouter/openai/gpt-5",
           messages,
           systemPrompt:
@@ -320,7 +316,7 @@ describe("Langchain E2E Tests", () => {
           console.log("OPENAI_API_KEY não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openAIApiKey: openAIApiKey!,
         });
 
@@ -331,12 +327,12 @@ describe("Langchain E2E Tests", () => {
         });
 
         const messages = [
-          LangchainMessages.human(
+          AIMessages.human(
             "Crie uma pessoa fictícia. Nome: João, Idade: 30, Cidade: São Paulo"
           ),
         ];
 
-        const result = await langchain.callStructuredOutput({
+        const result = await ai.callStructuredOutput({
           aiModel: "gpt-4o",
           messages,
           outputSchema,
@@ -357,7 +353,7 @@ describe("Langchain E2E Tests", () => {
           console.log("GOOGLE_GEMINI_TOKEN não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           googleGeminiToken: googleGeminiToken!,
         });
 
@@ -367,12 +363,12 @@ describe("Langchain E2E Tests", () => {
         });
 
         const messages = [
-          LangchainMessages.human(
+          AIMessages.human(
             "Calcule a soma e o produto de 5 e 3. A soma de 5 e 3 é 8, e o produto é 15."
           ),
         ];
 
-        const result = await langchain.callStructuredOutput({
+        const result = await ai.callStructuredOutput({
           aiModel: "gemini-2.5-flash",
           messages,
           outputSchema,
@@ -395,7 +391,7 @@ describe("Langchain E2E Tests", () => {
           console.log("OPENROUTER_API_KEY não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openRouterApiKey: openRouterApiKey!,
         });
 
@@ -405,10 +401,10 @@ describe("Langchain E2E Tests", () => {
         });
 
         const messages = [
-          LangchainMessages.human("Calcule a soma e o produto de 7 e 4"),
+          AIMessages.human("Calcule a soma e o produto de 7 e 4"),
         ];
 
-        const result = await langchain.callStructuredOutput({
+        const result = await ai.callStructuredOutput({
           aiModel: "openrouter/openai/gpt-5",
           messages,
           outputSchema,
@@ -428,7 +424,7 @@ describe("Langchain E2E Tests", () => {
           console.log("OPENROUTER_API_KEY não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openRouterApiKey: openRouterApiKey!,
         });
 
@@ -444,12 +440,12 @@ describe("Langchain E2E Tests", () => {
         });
 
         const messages = [
-          LangchainMessages.human(
+          AIMessages.human(
             "Crie um prontuário médico formal para um paciente chamado João, 30 anos, com diagnóstico de gripe. A data da consulta foi 25/01/2026."
           ),
         ];
 
-        const result = await langchain.callStructuredOutput({
+        const result = await ai.callStructuredOutput({
           aiModel: "openrouter/openai/gpt-5",
           messages,
           outputSchema,
@@ -477,17 +473,15 @@ describe("Langchain E2E Tests", () => {
           console.log("OPENAI_API_KEY não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openAIApiKey: openAIApiKey!,
         });
 
         const messages = [
-          LangchainMessages.human(
-            "Explique o que é TypeScript em uma frase curta."
-          ),
+          AIMessages.human("Explique o que é TypeScript em uma frase curta."),
         ];
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "gpt-4o",
           messages,
           modelConfig: {
@@ -511,17 +505,15 @@ describe("Langchain E2E Tests", () => {
           console.log("OPENROUTER_API_KEY não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openRouterApiKey: openRouterApiKey!,
         });
 
         const messages = [
-          LangchainMessages.human(
-            "Explique o que é JavaScript em uma frase curta."
-          ),
+          AIMessages.human("Explique o que é JavaScript em uma frase curta."),
         ];
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "openrouter/google/gemini-2.5-flash",
           messages,
           modelConfig: {
@@ -552,17 +544,17 @@ describe("Langchain E2E Tests", () => {
         console.log("OPENAI_API_KEY não está configurada");
         return;
       }
-      const langchain = new Langchain({
+      const ai = new AI({
         openAIApiKey: openAIApiKey!,
       });
 
       const messages = [
-        LangchainMessages.human("Meu nome é Maria."),
-        LangchainMessages.ai("Olá Maria! Prazer em conhecê-la."),
-        LangchainMessages.human("Qual é o meu nome?"),
+        AIMessages.human("Meu nome é Maria."),
+        AIMessages.ai("Olá Maria! Prazer em conhecê-la."),
+        AIMessages.human("Qual é o meu nome?"),
       ];
 
-      const result = await langchain.call({
+      const result = await ai.call({
         aiModel: "gpt-4o",
         messages,
       });
@@ -579,17 +571,17 @@ describe("Langchain E2E Tests", () => {
           console.log("OPENROUTER_API_KEY não está configurada");
           return;
         }
-        const langchain = new Langchain({
+        const ai = new AI({
           openRouterApiKey: openRouterApiKey!,
         });
 
         const messages = [
-          LangchainMessages.human("Meu nome é João."),
-          LangchainMessages.ai("Olá João! Prazer em conhecê-lo."),
-          LangchainMessages.human("Qual é o meu nome?"),
+          AIMessages.human("Meu nome é João."),
+          AIMessages.ai("Olá João! Prazer em conhecê-lo."),
+          AIMessages.human("Qual é o meu nome?"),
         ];
 
-        const result = await langchain.call({
+        const result = await ai.call({
           aiModel: "openrouter/openai/gpt-5",
           messages,
         });
