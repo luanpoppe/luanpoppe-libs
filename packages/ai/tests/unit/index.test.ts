@@ -2,7 +2,7 @@ import { AI } from "../../src/index";
 import { AIModels } from "../../src/langchain/models";
 import { createAgent } from "langchain";
 import { AIMessages } from "../../src/langchain/messages";
-import { AIMemory } from "../../src/langchain/checkpointers";
+import { AIMemory } from "../../src/langchain/memory";
 import z from "zod";
 
 // Mock das dependências
@@ -23,8 +23,8 @@ vi.mock("../../src/langchain/models", () => ({
   },
 }));
 
-vi.mock("../../src/langchain/checkpointers", async () => {
-  const actual = await vi.importActual("../../src/langchain/checkpointers");
+vi.mock("../../src/langchain/memory", async () => {
+  const actual = await vi.importActual("../../src/langchain/memory");
   return {
     ...actual,
     AIMemory: vi.fn().mockImplementation(function () {

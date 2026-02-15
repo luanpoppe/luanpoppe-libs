@@ -19,7 +19,7 @@ export type {
 export { AIModels } from "./langchain/models";
 export { AIMessages } from "./langchain/messages";
 export { AITools } from "./langchain/tools";
-export { AIMemory } from "./langchain/checkpointers";
+export { AIMemory } from "./langchain/memory";
 export type {
   MemoryConfig,
   BaseCheckpointSaver,
@@ -32,7 +32,7 @@ export type {
   MessageRole,
   HistoryMessageItem,
   GetHistoryResult,
-} from "./langchain/checkpointers";
+} from "./langchain/memory";
 export { AIAudioTranscription } from "./langchain/audio-transcription";
 export { AudioUtils } from "./utils/audio-utils";
 export type { AudioBuffer, AudioMimeType } from "./@types/audio";

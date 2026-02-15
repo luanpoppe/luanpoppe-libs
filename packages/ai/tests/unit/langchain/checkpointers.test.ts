@@ -1,4 +1,4 @@
-import { AIMemory } from "../../../src/langchain/checkpointers";
+import { AIMemory } from "../../../src/langchain/memory";
 import { MemorySaver } from "@langchain/langgraph";
 import { describe, it, expect, vi } from "vitest";
 

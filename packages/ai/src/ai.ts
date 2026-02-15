@@ -7,7 +7,7 @@ import {
   AIMemory,
   type BaseCheckpointSaver,
   type MemoryConfig,
-} from "./langchain/checkpointers";
+} from "./langchain/memory";
 import type { AIModelNames } from "./@types/model-names";
 import type {
   AICallParams,
