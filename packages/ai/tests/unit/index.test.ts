@@ -2,7 +2,7 @@ import { AI } from "../../src/index";
 import { AIModels } from "../../src/langchain/models";
 import { createAgent } from "langchain";
 import { AIMessages } from "../../src/langchain/messages";
-import { createCheckpointer } from "../../src/langchain/checkpointers";
+import { AIMemory } from "../../src/langchain/checkpointers";
 import z from "zod";
 
 // Mock das dependências
@@ -30,7 +30,12 @@ vi.mock("../../src/langchain/checkpointers", async () => {
   const actual = await vi.importActual("../../src/langchain/checkpointers");
   return {
     ...actual,
-    createCheckpointer: vi.fn().mockResolvedValue({}),
+    AIMemory: vi.fn().mockImplementation(function () {
+      return {
+        getCheckpointer: vi.fn().mockResolvedValue({}),
+        setAgent: vi.fn(),
+      };
+    }),
   };
 });
 
@@ -62,12 +67,13 @@ describe("AI", () => {
       expect(instance).toBeInstanceOf(AI);
     });
 
-    it("deve criar uma instância com memory config", () => {
+    it("deve criar uma instância com memory config e expor getter memory", () => {
       const instance = new AI({
         openAIApiKey: "test-key",
         memory: { type: "memory" },
       });
       expect(instance).toBeInstanceOf(AI);
+      expect(instance.memory).toBeDefined();
     });
 
     it("deve criar uma instância com checkpointer", () => {
@@ -77,6 +83,12 @@ describe("AI", () => {
         checkpointer: mockCheckpointer,
       });
       expect(instance).toBeInstanceOf(AI);
+      expect(() => instance.memory).toThrow("memory não está configurado");
+    });
+
+    it("memory getter deve lançar erro quando memory não está configurado", () => {
+      const instance = new AI({ openAIApiKey: "test-key" });
+      expect(() => instance.memory).toThrow("memory não está configurado");
     });
   });
 
@@ -297,7 +309,12 @@ describe("AI", () => {
 
     it("deve passar checkpointer e thread_id quando memory e threadId são fornecidos", async () => {
       const mockCheckpointer = {};
-      vi.mocked(createCheckpointer).mockResolvedValue(mockCheckpointer as any);
+      vi.mocked(AIMemory).mockImplementation(function () {
+        return {
+          getCheckpointer: vi.fn().mockResolvedValue(mockCheckpointer),
+          setAgent: vi.fn(),
+        } as any;
+      });
 
       const aiWithMemory = new AI({
         openAIApiKey: "test-key",

@@ -25,12 +25,12 @@ describe("AI E2E Tests", () => {
 
         const messages = [
           AIMessages.human(
-            "Olá! Responda apenas com 'Teste E2E GPT funcionando'"
+            "Olá! Responda apenas com 'Teste E2E GPT funcionando'",
           ),
         ];
 
         const result = await ai.call({
-          aiModel: "gpt-4o",
+          aiModel: "gpt-5-nano",
           messages,
         });
 
@@ -39,7 +39,7 @@ describe("AI E2E Tests", () => {
         expect(result.messages).toBeDefined();
         expect(result.messages.length).toBeGreaterThan(0);
         expect(result.text.toLowerCase()).toContain("teste");
-      }
+      },
     );
 
     it(
@@ -56,7 +56,7 @@ describe("AI E2E Tests", () => {
 
         const messages = [
           AIMessages.human(
-            "Olá! Responda apenas com 'Teste E2E Gemini funcionando'"
+            "Olá! Responda apenas com 'Teste E2E Gemini funcionando'",
           ),
         ];
 
@@ -70,7 +70,7 @@ describe("AI E2E Tests", () => {
         expect(result.messages).toBeDefined();
         expect(result.messages.length).toBeGreaterThan(0);
         expect(result.text.toLowerCase()).toContain("teste");
-      }
+      },
     );
 
     it(
@@ -87,7 +87,7 @@ describe("AI E2E Tests", () => {
 
         const messages = [
           AIMessages.human(
-            "Olá! Responda apenas com 'Teste E2E OpenRouter funcionando'"
+            "Olá! Responda apenas com 'Teste E2E OpenRouter funcionando'",
           ),
         ];
 
@@ -101,7 +101,7 @@ describe("AI E2E Tests", () => {
         expect(result.messages).toBeDefined();
         expect(result.messages.length).toBeGreaterThan(0);
         expect(result.text.toLowerCase()).toContain("teste");
-      }
+      },
     );
   });
 
@@ -119,21 +119,21 @@ describe("AI E2E Tests", () => {
         });
 
         const systemMessage = AIMessages.system(
-          "Você é um assistente útil que responde de forma concisa."
+          "Você é um assistente útil que responde de forma concisa.",
         );
         const humanMessage = AIMessages.human("Qual é a capital do Brasil?");
 
         const messages = [systemMessage, humanMessage];
 
         const result = await ai.call({
-          aiModel: "gpt-4o",
+          aiModel: "gpt-5-nano",
           messages,
         });
 
         expect(result.text).toBeDefined();
         expect(result.text.length).toBeGreaterThan(0);
         expect(result.text.toLowerCase()).toContain("brasília");
-      }
+      },
     );
 
     it(
@@ -161,7 +161,7 @@ describe("AI E2E Tests", () => {
         expect(result.text).toBeDefined();
         expect(result.text.length).toBeGreaterThan(0);
         expect(result.text).toMatch(/\b4\b/);
-      }
+      },
     );
 
     it(
@@ -177,7 +177,7 @@ describe("AI E2E Tests", () => {
         });
 
         const systemMessage = AIMessages.system(
-          "Você é um assistente útil que responde de forma concisa."
+          "Você é um assistente útil que responde de forma concisa.",
         );
         const humanMessage = AIMessages.human("Qual é a capital da França?");
 
@@ -194,9 +194,9 @@ describe("AI E2E Tests", () => {
         expect(
           lowerText.includes("paris") ||
             lowerText.includes("paris,") ||
-            lowerText.includes("paris.")
+            lowerText.includes("paris."),
         ).toBe(true);
-      }
+      },
     );
   });
 
@@ -215,7 +215,7 @@ describe("AI E2E Tests", () => {
       ];
 
       const result = await ai.call({
-        aiModel: "gpt-4o",
+        aiModel: "gpt-5-nano",
         messages,
         systemPrompt:
           "Você é um especialista em programação. Responda sempre em português brasileiro.",
@@ -232,7 +232,7 @@ describe("AI E2E Tests", () => {
           lowerText.includes("code") ||
           lowerText.includes("software") ||
           lowerText.includes("linguagem") ||
-          lowerText.includes("desenvolvimento")
+          lowerText.includes("desenvolvimento"),
       ).toBe(true);
     });
 
@@ -303,7 +303,7 @@ describe("AI E2E Tests", () => {
         // Se não encontrou palavras específicas de ciência, pelo menos verifica que a resposta existe
         expect(result.text.length).toBeGreaterThan(10);
         // Se encontrou palavras relacionadas a ciência, ótimo, mas não é obrigatório para passar o teste
-      }
+      },
     );
   });
 
@@ -328,12 +328,12 @@ describe("AI E2E Tests", () => {
 
         const messages = [
           AIMessages.human(
-            "Crie uma pessoa fictícia. Nome: João, Idade: 30, Cidade: São Paulo"
+            "Crie uma pessoa fictícia. Nome: João, Idade: 30, Cidade: São Paulo",
           ),
         ];
 
         const result = await ai.callStructuredOutput({
-          aiModel: "gpt-4o",
+          aiModel: "gpt-5-nano",
           messages,
           outputSchema,
         });
@@ -342,7 +342,7 @@ describe("AI E2E Tests", () => {
         expect(result.response.name).toBe("João");
         expect(result.response.age).toBe(30);
         expect(result.response.city).toBe("São Paulo");
-      }
+      },
     );
 
     it(
@@ -364,7 +364,7 @@ describe("AI E2E Tests", () => {
 
         const messages = [
           AIMessages.human(
-            "Calcule a soma e o produto de 5 e 3. A soma de 5 e 3 é 8, e o produto é 15."
+            "Calcule a soma e o produto de 5 e 3. A soma de 5 e 3 é 8, e o produto é 15.",
           ),
         ];
 
@@ -380,7 +380,7 @@ describe("AI E2E Tests", () => {
         expect(result.response.sum).toBeLessThanOrEqual(9);
         expect(result.response.product).toBeGreaterThanOrEqual(14);
         expect(result.response.product).toBeLessThanOrEqual(16);
-      }
+      },
     );
 
     it(
@@ -413,7 +413,7 @@ describe("AI E2E Tests", () => {
         expect(result.response).toBeDefined();
         expect(result.response.sum).toBe(11);
         expect(result.response.product).toBe(28);
-      }
+      },
     );
 
     it(
@@ -441,7 +441,7 @@ describe("AI E2E Tests", () => {
 
         const messages = [
           AIMessages.human(
-            "Crie um prontuário médico formal para um paciente chamado João, 30 anos, com diagnóstico de gripe. A data da consulta foi 25/01/2026."
+            "Crie um prontuário médico formal para um paciente chamado João, 30 anos, com diagnóstico de gripe. A data da consulta foi 25/01/2026.",
           ),
         ];
 
@@ -460,7 +460,7 @@ describe("AI E2E Tests", () => {
         if (result.response.dataConsulta) {
           expect(typeof result.response.dataConsulta).toBe("string");
         }
-      }
+      },
     );
   });
 
@@ -482,7 +482,7 @@ describe("AI E2E Tests", () => {
         ];
 
         const result = await ai.call({
-          aiModel: "gpt-4o",
+          aiModel: "gpt-5-nano",
           messages,
           modelConfig: {
             maxTokens: 50,
@@ -493,7 +493,7 @@ describe("AI E2E Tests", () => {
         expect(result.text).toBeDefined();
         // maxTokens pode não ser exatamente respeitado, então verificamos apenas que existe resposta
         expect(result.text.length).toBeGreaterThan(0);
-      }
+      },
     );
 
     it(
@@ -524,17 +524,17 @@ describe("AI E2E Tests", () => {
 
         if (result.text === "Empty response from the model") {
           throw new Error(
-            "OpenRouter retornou resposta vazia para maxTokens/temperature"
+            "OpenRouter retornou resposta vazia para maxTokens/temperature",
           );
         }
         expect(
           (result.messages.at(-1)?.response_metadata?.tokenUsage as any)
-            ?.totalTokens
+            ?.totalTokens,
         ).toBeLessThanOrEqual(maxTokens);
         expect(result.text).toBeDefined();
         // maxTokens pode não ser exatamente respeitado, então verificamos apenas que existe resposta
         expect(result.text.length).toBeGreaterThan(0);
-      }
+      },
     );
   });
 
@@ -556,20 +556,71 @@ describe("AI E2E Tests", () => {
 
         // Primeira mensagem: informar nome
         await ai.call({
-          aiModel: "gpt-4o",
+          aiModel: "gpt-5-nano",
           messages: [AIMessages.human("Meu nome é Carlos. Lembre-se disso.")],
           threadId,
         });
 
         // Segunda mensagem: perguntar o nome (deve lembrar do contexto)
         const result = await ai.call({
-          aiModel: "gpt-4o",
+          aiModel: "gpt-5-nano",
           messages: [AIMessages.human("Qual é o meu nome?")],
           threadId,
         });
 
         expect(result.text).toBeDefined();
         expect(result.text.toLowerCase()).toContain("carlos");
+      },
+    );
+
+    it(
+      "deve retornar histórico de mensagens via AIMemory.getHistory",
+      { timeout },
+      async () => {
+        if (!openAIApiKey) {
+          console.log("OPENAI_API_KEY não está configurada");
+          return;
+        }
+        const ai = new AI({
+          openAIApiKey: openAIApiKey!,
+          memory: { type: "memory" },
+        });
+
+        const threadId = "e2e-aimemory-history-thread";
+
+        // Primeira mensagem
+        await ai.call({
+          aiModel: "gpt-5-nano",
+          messages: [AIMessages.human("Diga apenas: ok, recebi.")],
+          threadId,
+        });
+
+        // Segunda mensagem
+        await ai.call({
+          aiModel: "gpt-5-nano",
+          messages: [AIMessages.human("O que eu disse na mensagem anterior?")],
+          threadId,
+        });
+
+        // Buscar histórico via ai.memory.getHistory (agent definido em getRawAgent)
+
+        const { fullHistory, messages } = await ai.memory.getHistory(threadId);
+
+        console.log({ messages });
+
+        expect(fullHistory.length).toBeGreaterThan(0);
+        expect(messages.length).toBeGreaterThanOrEqual(2);
+
+        const allContent = messages.map((m) => m.content).join(" ");
+        expect(allContent).toContain("Diga apenas");
+        expect(allContent).toContain("O que eu disse");
+
+        expect(
+          messages.every((m) => ["human", "ai", "tool"].includes(m.role)),
+        ).toBe(true);
+        expect(messages.every((m) => typeof m.createdAt === "string")).toBe(
+          true,
+        );
       },
     );
   });
@@ -591,7 +642,7 @@ describe("AI E2E Tests", () => {
       ];
 
       const result = await ai.call({
-        aiModel: "gpt-4o",
+        aiModel: "gpt-5-nano",
         messages,
       });
 
@@ -618,13 +669,13 @@ describe("AI E2E Tests", () => {
         ];
 
         const result = await ai.call({
-          aiModel: "openrouter/openai/gpt-5",
+          aiModel: "openrouter/openai/gpt-5-nano",
           messages,
         });
 
         expect(result.text).toBeDefined();
         expect(result.text.toLowerCase()).toContain("joão");
-      }
+      },
     );
   });
 });

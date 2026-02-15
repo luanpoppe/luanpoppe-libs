@@ -6,7 +6,7 @@ import {
   modelRetryMiddleware,
 } from "langchain";
 import {
-  createCheckpointer,
+  AIMemory,
   type BaseCheckpointSaver,
   type MemoryConfig,
 } from "./langchain/checkpointers";
@@ -28,13 +28,30 @@ type AIConstructor = {
   googleGeminiToken?: string;
   openAIApiKey?: string;
   openRouterApiKey?: string;
-  /** Configuração de persistência de histórico (memory, sqlite, postgres, redis, mongodb) */
-  memory?: MemoryConfig;
+  /** Configuração de persistência de histórico (memory, sqlite, postgres, redis, mongodb) ou instância AIMemory */
+  memory?: MemoryConfig | AIMemory;
   /** Instância de checkpointer para usuários avançados (alternativa a memory) */
   checkpointer?: BaseCheckpointSaver;
 };
 
 export class AI {
+  private _memory: AIMemory | undefined;
+
+  /**
+   * Instância de AIMemory. Lança exceção se memory não estiver configurado.
+   *
+   * @example
+   * const { fullHistory, messages } = await ai.memory.getHistory(threadId);
+   */
+  get memory(): AIMemory {
+    if (!this._memory) {
+      throw new Error(
+        "memory não está configurado. Passe memory no construtor do AI (ex: memory: { type: 'memory' })."
+      );
+    }
+    return this._memory;
+  }
+
   private checkpointer: BaseCheckpointSaver | undefined;
   private checkpointerPromise: Promise<BaseCheckpointSaver> | undefined;
 
@@ -42,13 +59,19 @@ export class AI {
     if (config.checkpointer) {
       this.checkpointer = config.checkpointer;
     }
+    if (config.memory) {
+      this._memory =
+        config.memory instanceof AIMemory
+          ? config.memory
+          : new AIMemory(config.memory);
+    }
   }
 
   private async getCheckpointer(): Promise<BaseCheckpointSaver | undefined> {
     if (this.checkpointer) return this.checkpointer;
-    if (this.config.memory) {
+    if (this._memory) {
       if (!this.checkpointerPromise) {
-        this.checkpointerPromise = createCheckpointer(this.config.memory);
+        this.checkpointerPromise = this._memory.getCheckpointer();
       }
       this.checkpointer = await this.checkpointerPromise;
       return this.checkpointer;
@@ -57,7 +80,7 @@ export class AI {
   }
 
   private ensureThreadIdWhenCheckpointer(params: AICallParams): void {
-    if (this.config.checkpointer || this.config.memory) {
+    if (this.config.checkpointer || this.config.memory !== undefined) {
       if (!params.threadId) {
         throw new Error(
           "threadId é obrigatório quando memory ou checkpointer está configurado. " +
@@ -76,6 +99,7 @@ export class AI {
     const agent = createAgent({
       ...this.standardAgent(params, checkpointer),
     });
+    this._memory?.setAgent(agent);
 
     const invokeConfig =
       params.threadId && checkpointer
@@ -114,6 +138,7 @@ export class AI {
       ...this.standardAgent(params, checkpointer),
       responseFormat: normalizedSchema as any,
     });
+    this._memory?.setAgent(agent);
 
     const invokeConfig =
       params.threadId && checkpointer
@@ -179,6 +204,8 @@ export class AI {
       ...this.standardAgent(params, checkpointer),
       responseFormat: outputSchema as any,
     });
+
+    this._memory?.setAgent(agent);
 
     return { agent };
   }

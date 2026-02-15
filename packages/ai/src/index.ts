@@ -18,7 +18,7 @@ export type {
 export { AIModels } from "./langchain/models";
 export { AIMessages } from "./langchain/messages";
 export { AITools } from "./langchain/tools";
-export { createCheckpointer } from "./langchain/checkpointers";
+export { AIMemory } from "./langchain/checkpointers";
 export type {
   MemoryConfig,
   BaseCheckpointSaver,
@@ -27,6 +27,10 @@ export type {
   PostgresCheckpointerConfig,
   RedisCheckpointerConfig,
   MongoDBCheckpointerConfig,
+  GraphWithStateHistory,
+  MessageRole,
+  HistoryMessageItem,
+  GetHistoryResult,
 } from "./langchain/checkpointers";
 export { AIAudioTranscription } from "./langchain/audio-transcription";
 export { AudioUtils } from "./utils/audio-utils";
