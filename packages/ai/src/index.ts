@@ -8,6 +8,7 @@ import type {
 } from "./@types/ai-call";
 
 export { AI };
+export type { AIAgent } from "./@types/agent";
 export type {
   AICallParams,
   AICallReturn,

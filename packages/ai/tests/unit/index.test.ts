@@ -12,10 +12,6 @@ vi.mock("langchain", async () => {
     ...actual,
     createAgent: vi.fn(),
     modelRetryMiddleware: vi.fn((config) => ({ type: "retry", ...config })),
-    modelFallbackMiddleware: vi.fn((...models) => ({
-      type: "fallback",
-      models,
-    })),
   };
 });
 
@@ -23,6 +19,7 @@ vi.mock("../../src/langchain/models", () => ({
   AIModels: {
     gpt: vi.fn(),
     gemini: vi.fn(),
+    openrouter: vi.fn(),
   },
 }));
 
@@ -197,14 +194,17 @@ describe("AI", () => {
         invoke: vi.fn().mockResolvedValue(mockResponse),
       } as any);
 
+      const { modelRetryMiddleware } = await import("langchain");
+
       await ai.call({
         aiModel: "gpt-4",
         messages: mockMessages,
         maxRetries: 5,
       });
 
-      const callArgs = vi.mocked(createAgent).mock.calls[0][0];
-      expect(callArgs.middleware).toBeDefined();
+      expect(modelRetryMiddleware).toHaveBeenCalledWith(
+        expect.objectContaining({ maxRetries: 5 }),
+      );
     });
 
     it("deve usar modelo GPT quando aiModel começa com 'gpt'", async () => {
@@ -260,7 +260,7 @@ describe("AI", () => {
         ai.call({
           aiModel: "unsupported-model" as any,
           messages: mockMessages,
-        })
+        }),
       ).rejects.toThrow("Model not supported");
     });
 
@@ -303,8 +303,181 @@ describe("AI", () => {
         aiWithMemory.call({
           aiModel: "gpt-4",
           messages: [AIMessages.human("Olá")],
-        })
+        }),
       ).rejects.toThrow("threadId é obrigatório");
+    });
+
+    it("deve fazer fallback para o próximo modelo quando o principal falhar", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const mockResponse = {
+        messages: [{ content: "Resposta do fallback" } as any],
+      };
+      const error = new Error("Modelo principal falhou");
+
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gemini).mockReturnValue(mockModel);
+
+      let createCount = 0;
+      vi.mocked(createAgent).mockImplementation(() => {
+        createCount++;
+        return {
+          invoke: vi.fn().mockImplementation(() => {
+            if (createCount === 1) return Promise.reject(error);
+            return Promise.resolve(mockResponse);
+          }),
+        } as any;
+      });
+
+      const result = await ai.call({
+        aiModel: "gpt-4",
+        messages: mockMessages,
+        aiModelsFallback: ["gemini-2.5-flash"],
+      });
+
+      expect(createAgent).toHaveBeenCalledTimes(2);
+      expect(AIModels.gpt).toHaveBeenCalled();
+      expect(AIModels.gemini).toHaveBeenCalled();
+      expect(result.text).toBe("Resposta do fallback");
+    });
+
+    it("deve fazer fallback com modelo OpenRouter na lista", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const mockResponse = {
+        messages: [{ content: "Resposta OpenRouter" } as any],
+      };
+      const error = new Error("GPT falhou");
+
+      const aiWithOpenRouter = new AI({
+        openAIApiKey: "test-key",
+        openRouterApiKey: "test-openrouter-key",
+      });
+
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.openrouter).mockReturnValue(mockModel);
+
+      let callCount = 0;
+      vi.mocked(createAgent).mockImplementation(() => {
+        callCount++;
+        return {
+          invoke: vi.fn().mockImplementation(() => {
+            if (callCount === 1) return Promise.reject(error);
+            return Promise.resolve(mockResponse);
+          }),
+        } as any;
+      });
+
+      const result = await aiWithOpenRouter.call({
+        aiModel: "gpt-4",
+        messages: mockMessages,
+        aiModelsFallback: ["openrouter/openai/gpt-5-nano"],
+      });
+
+      expect(AIModels.openrouter).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: "openai/gpt-5-nano",
+          apiKey: "test-openrouter-key",
+        }),
+      );
+      expect(result.text).toBe("Resposta OpenRouter");
+    });
+
+    it("deve usar aiModelsFallback do construtor quando não passado no método", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const mockResponse = {
+        messages: [{ content: "Resposta fallback default" } as any],
+      };
+      const error = new Error("Modelo principal falhou");
+
+      const aiWithDefaultFallback = new AI({
+        openAIApiKey: "test-key",
+        aiModelsFallback: ["gemini-2.5-flash"],
+      });
+
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gemini).mockReturnValue(mockModel);
+
+      let createCount = 0;
+      vi.mocked(createAgent).mockImplementation(() => {
+        createCount++;
+        return {
+          invoke: vi.fn().mockImplementation(() => {
+            if (createCount === 1) return Promise.reject(error);
+            return Promise.resolve(mockResponse);
+          }),
+        } as any;
+      });
+
+      const result = await aiWithDefaultFallback.call({
+        aiModel: "gpt-4",
+        messages: mockMessages,
+      });
+
+      expect(createAgent).toHaveBeenCalledTimes(2);
+      expect(result.text).toBe("Resposta fallback default");
+    });
+
+    it("deve usar aiModelsFallback do método quando passado, sobrescrevendo o do construtor", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const mockResponse = {
+        messages: [{ content: "Resposta fallback do método" } as any],
+      };
+      const error = new Error("Modelo principal falhou");
+
+      const aiWithDefaultFallback = new AI({
+        openAIApiKey: "test-key",
+        openRouterApiKey: "test-openrouter-key",
+        aiModelsFallback: ["gemini-2.5-flash"],
+      });
+
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.openrouter).mockReturnValue(mockModel);
+
+      let createCount = 0;
+      vi.mocked(createAgent).mockImplementation(() => {
+        createCount++;
+        return {
+          invoke: vi.fn().mockImplementation(() => {
+            if (createCount === 1) return Promise.reject(error);
+            return Promise.resolve(mockResponse);
+          }),
+        } as any;
+      });
+
+      const result = await aiWithDefaultFallback.call({
+        aiModel: "gpt-4",
+        messages: mockMessages,
+        aiModelsFallback: ["openrouter/openai/gpt-5-nano"],
+      });
+
+      expect(AIModels.openrouter).toHaveBeenCalled();
+      expect(result.text).toBe("Resposta fallback do método");
+    });
+
+    it("deve lançar exceção quando todos os modelos falharem", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const error = new Error("Todos os modelos falharam");
+
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gemini).mockReturnValue(mockModel);
+
+      vi.mocked(createAgent).mockReturnValue({
+        invoke: vi.fn().mockRejectedValue(error),
+      } as any);
+
+      await expect(
+        ai.call({
+          aiModel: "gpt-4",
+          messages: mockMessages,
+          aiModelsFallback: ["gemini-2.5-flash"],
+        }),
+      ).rejects.toThrow("Todos os modelos falharam");
+
+      expect(createAgent).toHaveBeenCalledTimes(2);
     });
 
     it("deve passar checkpointer e thread_id quando memory e threadId são fornecidos", async () => {
@@ -324,10 +497,7 @@ describe("AI", () => {
       const mockModel = {} as any;
       const mockMessages = [AIMessages.human("Olá")];
       const mockResponse = {
-        messages: [
-          mockMessages[0],
-          { content: "Resposta" } as any,
-        ],
+        messages: [mockMessages[0], { content: "Resposta" } as any],
       };
 
       vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
@@ -344,7 +514,7 @@ describe("AI", () => {
       expect(callArgs.checkpointer).toBe(mockCheckpointer);
       expect(mockInvoke).toHaveBeenCalledWith(
         { messages: mockMessages },
-        { configurable: { thread_id: "thread-123" } }
+        { configurable: { thread_id: "thread-123" } },
       );
     });
   });
@@ -377,6 +547,40 @@ describe("AI", () => {
       expect(result.response).toEqual(mockStructuredResponse);
     });
 
+    it("deve fazer fallback no callStructuredOutput quando o modelo principal falhar", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const outputSchema = z.object({ name: z.string() });
+      const mockStructuredResponse = { name: "Fallback" };
+      const error = new Error("Modelo principal falhou");
+
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(AIModels.gemini).mockReturnValue(mockModel);
+
+      let createCount = 0;
+      vi.mocked(createAgent).mockImplementation(() => {
+        createCount++;
+        return {
+          invoke: vi.fn().mockImplementation(() => {
+            if (createCount === 1) return Promise.reject(error);
+            return Promise.resolve({
+              structuredResponse: mockStructuredResponse,
+            });
+          }),
+        } as any;
+      });
+
+      const result = await ai.callStructuredOutput({
+        aiModel: "gpt-4",
+        messages: mockMessages,
+        outputSchema,
+        aiModelsFallback: ["gemini-2.5-flash"],
+      });
+
+      expect(createAgent).toHaveBeenCalledTimes(2);
+      expect(result.response).toEqual(mockStructuredResponse);
+    });
+
     it("deve validar o schema e lançar erro se inválido", async () => {
       const mockModel = {} as any;
       const mockMessages = [AIMessages.human("Teste")];
@@ -398,7 +602,7 @@ describe("AI", () => {
           aiModel: "gpt-4",
           messages: mockMessages,
           outputSchema,
-        })
+        }),
       ).rejects.toThrow();
     });
   });
@@ -439,7 +643,7 @@ describe("AI", () => {
           aiModel: "gpt-4",
           messages: mockMessages,
         },
-        outputSchema
+        outputSchema,
       );
 
       expect(createAgent).toHaveBeenCalled();

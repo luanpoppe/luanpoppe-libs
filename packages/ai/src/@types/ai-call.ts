@@ -14,6 +14,8 @@ export type AICallParams = {
   modelConfig?: Omit<LLMModelConfig, "apiKey" | "model">;
 
   aiModel: AIModelNames;
+  /** Lista de modelos de fallback quando o principal falhar após todos os retries (suporta OpenRouter, Gemini, GPT) */
+  aiModelsFallback?: AIModelNames[];
   messages: MessageInput[];
   systemPrompt?: string;
   maxRetries?: number;

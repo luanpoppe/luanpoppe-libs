@@ -1,15 +1,14 @@
 import { AIModels, LLMModelConfig } from "./langchain/models";
 import z from "zod";
-import {
-  createAgent,
-  modelFallbackMiddleware,
-  modelRetryMiddleware,
-} from "langchain";
+import { createAgent, modelRetryMiddleware } from "langchain";
+import type { AIAgent } from "./@types/agent";
+
 import {
   AIMemory,
   type BaseCheckpointSaver,
   type MemoryConfig,
 } from "./langchain/checkpointers";
+import type { AIModelNames } from "./@types/model-names";
 import type {
   AICallParams,
   AICallReturn,
@@ -28,6 +27,8 @@ type AIConstructor = {
   googleGeminiToken?: string;
   openAIApiKey?: string;
   openRouterApiKey?: string;
+  /** Lista padrão de modelos de fallback (usada em call/callStructuredOutput quando não passada no método) */
+  aiModelsFallback?: AIModelNames[];
   /** Configuração de persistência de histórico (memory, sqlite, postgres, redis, mongodb) ou instância AIMemory */
   memory?: MemoryConfig | AIMemory;
   /** Instância de checkpointer para usuários avançados (alternativa a memory) */
@@ -46,7 +47,7 @@ export class AI {
   get memory(): AIMemory {
     if (!this._memory) {
       throw new Error(
-        "memory não está configurado. Passe memory no construtor do AI (ex: memory: { type: 'memory' })."
+        "memory não está configurado. Passe memory no construtor do AI (ex: memory: { type: 'memory' }).",
       );
     }
     return this._memory;
@@ -90,23 +91,52 @@ export class AI {
     }
   }
 
+  private async invokeWithRetryAndFallback<T>(
+    params: AICallParams,
+    createAgentForModel: (paramsForModel: AICallParams) => AIAgent,
+    execute: (agent: AIAgent) => Promise<T>,
+  ): Promise<{ result: T; agent: AIAgent }> {
+    const fallback =
+      params.aiModelsFallback ?? this.config.aiModelsFallback ?? [];
+    const models: (typeof params.aiModel)[] = [params.aiModel, ...fallback];
+    let lastError: unknown;
+
+    for (const aiModel of models) {
+      const paramsForModel = { ...params, aiModel };
+      const agent = createAgentForModel(paramsForModel);
+
+      try {
+        const result = await execute(agent);
+        return { result, agent };
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError;
+  }
+
   async call(params: AICallParams): AICallReturn {
     const { messages } = params;
 
     this.ensureThreadIdWhenCheckpointer(params);
     const checkpointer = await this.getCheckpointer();
 
-    const agent = createAgent({
-      ...this.standardAgent(params, checkpointer),
-    });
-    this._memory?.setAgent(agent);
-
     const invokeConfig =
       params.threadId && checkpointer
         ? { configurable: { thread_id: params.threadId } }
         : undefined;
 
-    const response = await agent.invoke({ messages }, invokeConfig as any);
+    const { result: response, agent } = await this.invokeWithRetryAndFallback(
+      params,
+      (paramsForModel) =>
+        createAgent({
+          ...this.standardAgent(paramsForModel, checkpointer),
+        }),
+      (agent) => agent.invoke({ messages }, invokeConfig as any),
+    );
+
+    this._memory?.setAgent(agent);
 
     const rawContent = response.messages.at(-1)?.content as string | undefined;
     const text =
@@ -122,30 +152,30 @@ export class AI {
   async callStructuredOutput<T extends z.ZodSchema>(
     params: AICallStructuredOutputParams<T>,
   ): AICallStructuredOutputReturn<typeof params.outputSchema> {
-    const { outputSchema, messages, aiModel } = params;
+    const { outputSchema, messages } = params;
 
     this.ensureThreadIdWhenCheckpointer(params);
     const checkpointer = await this.getCheckpointer();
-
-    // Normaliza o schema para compatibilidade com OpenAI/OpenRouter
-    // OpenAI exige que todos os campos em properties estejam no array required
-    const normalizedSchema = this.normalizeSchemaForOpenAI(
-      outputSchema,
-      aiModel,
-    );
-
-    const agent = createAgent({
-      ...this.standardAgent(params, checkpointer),
-      responseFormat: normalizedSchema as any,
-    });
-    this._memory?.setAgent(agent);
 
     const invokeConfig =
       params.threadId && checkpointer
         ? { configurable: { thread_id: params.threadId } }
         : undefined;
 
-    const response = await agent.invoke({ messages }, invokeConfig as any);
+    const { result: response, agent } = await this.invokeWithRetryAndFallback(
+      params,
+      (paramsForModel) =>
+        createAgent({
+          ...this.standardAgent(paramsForModel, checkpointer),
+          responseFormat: this.normalizeSchemaForOpenAI(
+            outputSchema,
+            paramsForModel.aiModel,
+          ) as any,
+        }),
+      (agent) => agent.invoke({ messages }, invokeConfig as any),
+    );
+
+    this._memory?.setAgent(agent);
 
     const parsedResponse = outputSchema.parse(response?.structuredResponse);
 
@@ -196,7 +226,7 @@ export class AI {
   async getRawAgent(
     params: AICallParams,
     outputSchema?: z.ZodSchema | undefined,
-  ): Promise<{ agent: ReturnType<typeof createAgent> }> {
+  ): Promise<{ agent: AIAgent }> {
     this.ensureThreadIdWhenCheckpointer(params);
     const checkpointer = await this.getCheckpointer();
 
@@ -269,8 +299,8 @@ export class AI {
         maxRetries,
         backoffFactor: 2.0,
         initialDelayMs: 1000,
+        onFailure: "error",
       }),
-      modelFallbackMiddleware("gemini-2.5-flash", "gpt-4o-mini"),
     ];
   }
 }
