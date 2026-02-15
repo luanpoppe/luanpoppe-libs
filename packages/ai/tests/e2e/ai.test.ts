@@ -92,7 +92,7 @@ describe("AI E2E Tests", () => {
         ];
 
         const result = await ai.call({
-          aiModel: "openrouter/openai/gpt-5",
+          aiModel: "openrouter/openai/gpt-5-nano",
           messages,
         });
 
@@ -184,7 +184,7 @@ describe("AI E2E Tests", () => {
         const messages = [systemMessage, humanMessage];
 
         const result = await ai.call({
-          aiModel: "openrouter/openai/gpt-5",
+          aiModel: "openrouter/openai/gpt-5-nano",
           messages,
         });
 
@@ -253,7 +253,7 @@ describe("AI E2E Tests", () => {
         ];
 
         const result = await ai.call({
-          aiModel: "openrouter/openai/gpt-5",
+          aiModel: "openrouter/openai/gpt-5-nano",
           messages,
           systemPrompt:
             "Você é um cientista. Responda sempre em português brasileiro.",
@@ -405,7 +405,7 @@ describe("AI E2E Tests", () => {
         ];
 
         const result = await ai.callStructuredOutput({
-          aiModel: "openrouter/openai/gpt-5",
+          aiModel: "openrouter/openai/gpt-5-nano",
           messages,
           outputSchema,
         });
@@ -446,7 +446,7 @@ describe("AI E2E Tests", () => {
         ];
 
         const result = await ai.callStructuredOutput({
-          aiModel: "openrouter/openai/gpt-5",
+          aiModel: "openrouter/openai/gpt-5-nano",
           messages,
           outputSchema,
         });
