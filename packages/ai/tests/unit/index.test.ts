@@ -2,6 +2,7 @@ import { AI } from "../../src/index";
 import { AIModels } from "../../src/langchain/models";
 import { createAgent } from "langchain";
 import { AIMessages } from "../../src/langchain/messages";
+import { createCheckpointer } from "../../src/langchain/checkpointers";
 import z from "zod";
 
 // Mock das dependências
@@ -24,6 +25,14 @@ vi.mock("../../src/langchain/models", () => ({
     gemini: vi.fn(),
   },
 }));
+
+vi.mock("../../src/langchain/checkpointers", async () => {
+  const actual = await vi.importActual("../../src/langchain/checkpointers");
+  return {
+    ...actual,
+    createCheckpointer: vi.fn().mockResolvedValue({}),
+  };
+});
 
 describe("AI", () => {
   let ai: AI;
@@ -50,6 +59,23 @@ describe("AI", () => {
 
     it("deve criar uma instância com apenas googleGeminiToken", () => {
       const instance = new AI({ googleGeminiToken: "test-token" });
+      expect(instance).toBeInstanceOf(AI);
+    });
+
+    it("deve criar uma instância com memory config", () => {
+      const instance = new AI({
+        openAIApiKey: "test-key",
+        memory: { type: "memory" },
+      });
+      expect(instance).toBeInstanceOf(AI);
+    });
+
+    it("deve criar uma instância com checkpointer", () => {
+      const mockCheckpointer = {} as any;
+      const instance = new AI({
+        openAIApiKey: "test-key",
+        checkpointer: mockCheckpointer,
+      });
       expect(instance).toBeInstanceOf(AI);
     });
   });
@@ -254,6 +280,56 @@ describe("AI", () => {
         temperature: 0.7,
       });
     });
+
+    it("deve lançar erro quando memory está ativo e threadId não é fornecido", async () => {
+      const aiWithMemory = new AI({
+        openAIApiKey: "test-key",
+        memory: { type: "memory" },
+      });
+
+      await expect(
+        aiWithMemory.call({
+          aiModel: "gpt-4",
+          messages: [AIMessages.human("Olá")],
+        })
+      ).rejects.toThrow("threadId é obrigatório");
+    });
+
+    it("deve passar checkpointer e thread_id quando memory e threadId são fornecidos", async () => {
+      const mockCheckpointer = {};
+      vi.mocked(createCheckpointer).mockResolvedValue(mockCheckpointer as any);
+
+      const aiWithMemory = new AI({
+        openAIApiKey: "test-key",
+        memory: { type: "memory" },
+      });
+
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Olá")];
+      const mockResponse = {
+        messages: [
+          mockMessages[0],
+          { content: "Resposta" } as any,
+        ],
+      };
+
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
+      const mockInvoke = vi.fn().mockResolvedValue(mockResponse);
+      vi.mocked(createAgent).mockReturnValue({ invoke: mockInvoke } as any);
+
+      await aiWithMemory.call({
+        aiModel: "gpt-4",
+        messages: mockMessages,
+        threadId: "thread-123",
+      });
+
+      const callArgs = vi.mocked(createAgent).mock.calls[0][0];
+      expect(callArgs.checkpointer).toBe(mockCheckpointer);
+      expect(mockInvoke).toHaveBeenCalledWith(
+        { messages: mockMessages },
+        { configurable: { thread_id: "thread-123" } }
+      );
+    });
   });
 
   describe("callStructuredOutput", () => {
@@ -311,7 +387,7 @@ describe("AI", () => {
   });
 
   describe("getRawAgent", () => {
-    it("deve retornar um agente sem outputSchema", () => {
+    it("deve retornar um agente sem outputSchema", async () => {
       const mockModel = {} as any;
       const mockMessages = [AIMessages.human("Teste")];
       const mockAgent = {
@@ -321,7 +397,7 @@ describe("AI", () => {
       vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
       vi.mocked(createAgent).mockReturnValue(mockAgent as any);
 
-      const result = ai.getRawAgent({
+      const result = await ai.getRawAgent({
         aiModel: "gpt-4",
         messages: mockMessages,
       });
@@ -330,7 +406,7 @@ describe("AI", () => {
       expect(result.agent).toBe(mockAgent);
     });
 
-    it("deve retornar um agente com outputSchema quando fornecido", () => {
+    it("deve retornar um agente com outputSchema quando fornecido", async () => {
       const mockModel = {} as any;
       const mockMessages = [AIMessages.human("Teste")];
       const outputSchema = z.object({ result: z.string() });
@@ -341,7 +417,7 @@ describe("AI", () => {
       vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
       vi.mocked(createAgent).mockReturnValue(mockAgent as any);
 
-      const result = ai.getRawAgent(
+      const result = await ai.getRawAgent(
         {
           aiModel: "gpt-4",
           messages: mockMessages,

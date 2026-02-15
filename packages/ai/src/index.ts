@@ -12,11 +12,20 @@ import {
 import { ClientTool, ServerTool } from "@langchain/core/tools";
 import { AIMessages } from "./langchain/messages";
 import { AITools } from "./langchain/tools";
+import {
+  createCheckpointer,
+  type BaseCheckpointSaver,
+  type MemoryConfig,
+} from "./langchain/checkpointers";
 
 type AIConstructor = {
   googleGeminiToken?: string;
   openAIApiKey?: string;
   openRouterApiKey?: string;
+  /** Configuração de persistência de histórico (memory, sqlite, postgres, redis, mongodb) */
+  memory?: MemoryConfig;
+  /** Instância de checkpointer para usuários avançados (alternativa a memory) */
+  checkpointer?: BaseCheckpointSaver;
 };
 
 export type AICallParams = {
@@ -31,6 +40,8 @@ export type AICallParams = {
   messages: MessageInput[];
   systemPrompt?: string;
   maxRetries?: number;
+  /** ID da thread/conversa para persistência de histórico (obrigatório quando memory/checkpointer está ativo) */
+  threadId?: string;
 };
 
 export type AICallReturn = Promise<{
@@ -48,16 +59,54 @@ export type AICallStructuredOutputReturn<T> = Promise<{
 }>;
 
 export class AI {
-  constructor(private tokens: AIConstructor) {}
+  private checkpointer: BaseCheckpointSaver | undefined;
+  private checkpointerPromise: Promise<BaseCheckpointSaver> | undefined;
+
+  constructor(private config: AIConstructor) {
+    if (config.checkpointer) {
+      this.checkpointer = config.checkpointer;
+    }
+  }
+
+  private async getCheckpointer(): Promise<BaseCheckpointSaver | undefined> {
+    if (this.checkpointer) return this.checkpointer;
+    if (this.config.memory) {
+      if (!this.checkpointerPromise) {
+        this.checkpointerPromise = createCheckpointer(this.config.memory);
+      }
+      this.checkpointer = await this.checkpointerPromise;
+      return this.checkpointer;
+    }
+    return undefined;
+  }
+
+  private ensureThreadIdWhenCheckpointer(params: AICallParams): void {
+    if (this.config.checkpointer || this.config.memory) {
+      if (!params.threadId) {
+        throw new Error(
+          "threadId é obrigatório quando memory ou checkpointer está configurado. " +
+            "Passe threadId em AICallParams para identificar a conversa.",
+        );
+      }
+    }
+  }
 
   async call(params: AICallParams): AICallReturn {
     const { messages } = params;
 
+    this.ensureThreadIdWhenCheckpointer(params);
+    const checkpointer = await this.getCheckpointer();
+
     const agent = createAgent({
-      ...this.standardAgent(params),
+      ...this.standardAgent(params, checkpointer),
     });
 
-    const response = await agent.invoke({ messages });
+    const invokeConfig =
+      params.threadId && checkpointer
+        ? { configurable: { thread_id: params.threadId } }
+        : undefined;
+
+    const response = await agent.invoke({ messages }, invokeConfig as any);
 
     const rawContent = response.messages.at(-1)?.content as string | undefined;
     const text =
@@ -71,25 +120,31 @@ export class AI {
   }
 
   async callStructuredOutput<T extends z.ZodSchema>(
-    params: AICallStructuredOutputParams<T>
+    params: AICallStructuredOutputParams<T>,
   ): AICallStructuredOutputReturn<typeof params.outputSchema> {
     const { outputSchema, messages, aiModel } = params;
+
+    this.ensureThreadIdWhenCheckpointer(params);
+    const checkpointer = await this.getCheckpointer();
 
     // Normaliza o schema para compatibilidade com OpenAI/OpenRouter
     // OpenAI exige que todos os campos em properties estejam no array required
     const normalizedSchema = this.normalizeSchemaForOpenAI(
       outputSchema,
-      aiModel
+      aiModel,
     );
 
     const agent = createAgent({
-      ...this.standardAgent(params),
+      ...this.standardAgent(params, checkpointer),
       responseFormat: normalizedSchema as any,
     });
 
-    const response = await agent.invoke({
-      messages,
-    });
+    const invokeConfig =
+      params.threadId && checkpointer
+        ? { configurable: { thread_id: params.threadId } }
+        : undefined;
+
+    const response = await agent.invoke({ messages }, invokeConfig as any);
 
     const parsedResponse = outputSchema.parse(response?.structuredResponse);
 
@@ -103,7 +158,7 @@ export class AI {
    */
   private normalizeSchemaForOpenAI<T extends z.ZodSchema>(
     schema: T,
-    aiModel: string
+    aiModel: string,
   ): z.ZodSchema {
     // Apenas normaliza para modelos OpenAI/OpenRouter
     const isOpenAIModel =
@@ -137,12 +192,15 @@ export class AI {
     return schema;
   }
 
-  getRawAgent(
+  async getRawAgent(
     params: AICallParams,
-    outputSchema?: z.ZodSchema | undefined
-  ): { agent: ReturnType<typeof createAgent> } {
+    outputSchema?: z.ZodSchema | undefined,
+  ): Promise<{ agent: ReturnType<typeof createAgent> }> {
+    this.ensureThreadIdWhenCheckpointer(params);
+    const checkpointer = await this.getCheckpointer();
+
     const agent = createAgent({
-      ...this.standardAgent(params),
+      ...this.standardAgent(params, checkpointer),
       responseFormat: outputSchema as any,
     });
 
@@ -159,13 +217,13 @@ export class AI {
     };
 
     if (aiModel.startsWith("gpt")) {
-      config.apiKey = this.tokens.openAIApiKey;
+      config.apiKey = this.config.openAIApiKey;
 
       return AIModels.gpt(config);
     }
 
     if (aiModel.startsWith("gemini")) {
-      config.apiKey = this.tokens.googleGeminiToken;
+      config.apiKey = this.config.googleGeminiToken;
 
       return AIModels.gemini(config);
     }
@@ -175,7 +233,7 @@ export class AI {
       return AIModels.openrouter({
         ...config,
         model: modelName,
-        apiKey: this.tokens.openRouterApiKey,
+        apiKey: this.config.openRouterApiKey,
       });
     }
 
@@ -183,7 +241,8 @@ export class AI {
   }
 
   private standardAgent(
-    params: AICallParams
+    params: AICallParams,
+    checkpointer?: BaseCheckpointSaver,
   ): Parameters<typeof createAgent>[0] {
     const { systemPrompt, maxRetries = 3 } = params;
 
@@ -197,6 +256,7 @@ export class AI {
       ],
       tools: params.agent?.tools ?? [],
       responseFormat: undefined as any,
+      ...(checkpointer && { checkpointer }),
     };
   }
 
@@ -213,6 +273,16 @@ export class AI {
 }
 
 export { AIModels, AIMessages, AITools };
+export { createCheckpointer } from "./langchain/checkpointers";
+export type {
+  MemoryConfig,
+  BaseCheckpointSaver,
+  MemoryCheckpointerConfig,
+  SqliteCheckpointerConfig,
+  PostgresCheckpointerConfig,
+  RedisCheckpointerConfig,
+  MongoDBCheckpointerConfig,
+} from "./langchain/checkpointers";
 export { AIAudioTranscription } from "./langchain/audio-transcription";
 export { AudioUtils } from "./utils/audio-utils";
 export type { AudioBuffer, AudioMimeType } from "./@types/audio";

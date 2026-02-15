@@ -103,7 +103,8 @@ describe("AITools", () => {
 
     it("deve criar múltiplas ferramentas independentes", () => {
       const toolFunction1 = async (input: { x: number }) => input.x * 2;
-      const toolFunction2 = async (input: { y: string }) => y.toUpperCase();
+      const toolFunction2 = async (input: { y: string }) =>
+        input.y.toUpperCase();
 
       const params1: CreateToolParams = {
         toolFunction: toolFunction1,

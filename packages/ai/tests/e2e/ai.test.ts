@@ -538,6 +538,42 @@ describe("AI E2E Tests", () => {
     );
   });
 
+  describe("Persistência de histórico (memory/checkpointer)", () => {
+    it(
+      "deve manter histórico entre chamadas com threadId e MemorySaver",
+      { timeout },
+      async () => {
+        if (!openAIApiKey) {
+          console.log("OPENAI_API_KEY não está configurada");
+          return;
+        }
+        const ai = new AI({
+          openAIApiKey: openAIApiKey!,
+          memory: { type: "memory" },
+        });
+
+        const threadId = "e2e-memory-thread-1";
+
+        // Primeira mensagem: informar nome
+        await ai.call({
+          aiModel: "gpt-4o",
+          messages: [AIMessages.human("Meu nome é Carlos. Lembre-se disso.")],
+          threadId,
+        });
+
+        // Segunda mensagem: perguntar o nome (deve lembrar do contexto)
+        const result = await ai.call({
+          aiModel: "gpt-4o",
+          messages: [AIMessages.human("Qual é o meu nome?")],
+          threadId,
+        });
+
+        expect(result.text).toBeDefined();
+        expect(result.text.toLowerCase()).toContain("carlos");
+      },
+    );
+  });
+
   describe("Múltiplas mensagens em conversa", () => {
     it("deve manter contexto em múltiplas mensagens", { timeout }, async () => {
       if (!openAIApiKey) {
