@@ -84,7 +84,7 @@ export class AIMemory {
    *
    * @param threadId - ID da thread/conversa
    * @param graph - Opcional. Grafo compilado com checkpointer. Se não passado, usa o agent
-   *                definido no construtor ou via setAgent (ex: agent de ai.getRawAgent).
+   *                definido no construtor ou via setAgent. Se nenhum disponível, usa o checkpointer.
    * @returns Objeto com fullHistory (checkpoints) e messages (lista com role, createdAt, content)
    *
    * @example
@@ -96,6 +96,11 @@ export class AIMemory {
    * // Passando graph explicitamente
    * const { fullHistory, messages } = await memory.getHistory("1", agent);
    *
+   * @example
+   * // Apenas com checkpointer (sem graph)
+   * const memory = new AIMemory({ type: "memory" });
+   * const { fullHistory, messages } = await memory.getHistory("1");
+   *
    * @see https://docs.langchain.com/oss/javascript/langgraph/persistence#get-state-history
    * @see https://docs.langchain.com/oss/javascript/langgraph/add-memory#manage-checkpoints
    */
@@ -104,19 +109,43 @@ export class AIMemory {
     graph?: GraphWithStateHistory
   ): Promise<GetHistoryResult> {
     const graphToUse = graph ?? this.agent;
-    if (!graphToUse) {
-      throw new Error(
-        "É necessário passar graph em getHistory ou definir o agent no construtor/setAgent do AIMemory."
-      );
-    }
-    const config = { configurable: { thread_id: threadId } };
     const fullHistory: StateSnapshot[] = [];
-    for await (const snapshot of graphToUse.getStateHistory(config)) {
-      fullHistory.push(snapshot);
+
+    if (graphToUse) {
+      const config = { configurable: { thread_id: threadId } };
+      for await (const snapshot of graphToUse.getStateHistory(config)) {
+        fullHistory.push(snapshot);
+      }
+    } else {
+      const checkpointer = await this.getCheckpointer();
+      const config = { configurable: { thread_id: threadId } };
+      for await (const tuple of checkpointer.list(config)) {
+        fullHistory.push(this.checkpointTupleToSnapshot(tuple));
+      }
     }
 
     const messages = this.extractMessagesFromHistory(fullHistory);
     return { fullHistory, messages };
+  }
+
+  /**
+   * Converte CheckpointTuple (do checkpointer.list) em StateSnapshot.
+   * Permite obter histórico usando apenas o checkpointer, sem o graph.
+   */
+  private checkpointTupleToSnapshot(tuple: {
+    checkpoint: { channel_values: Record<string, unknown>; ts?: string };
+    config?: unknown;
+    metadata?: unknown;
+  }): StateSnapshot {
+    const { checkpoint } = tuple;
+    return {
+      values: checkpoint.channel_values ?? {},
+      createdAt: checkpoint.ts ?? new Date().toISOString(),
+      config: tuple.config ?? { configurable: {} },
+      metadata: tuple.metadata,
+      next: [],
+      tasks: [],
+    } as StateSnapshot;
   }
 
   /**
@@ -220,19 +249,17 @@ export class AIMemory {
     checkpointId?: string
   ): Promise<StateSnapshot | null> {
     const graphToUse = graph ?? this.agent;
-    if (!graphToUse) {
-      throw new Error(
-        "É necessário passar graph em getState ou definir o agent no construtor/setAgent do AIMemory."
-      );
+    if (graphToUse?.getState) {
+      const config = {
+        configurable: {
+          thread_id: threadId,
+          ...(checkpointId && { checkpoint_id: checkpointId }),
+        },
+      };
+      return (await graphToUse.getState(config)) ?? null;
     }
-    if (!graphToUse.getState) {
-      const { fullHistory } = await this.getHistory(threadId, graphToUse);
-      return fullHistory[0] ?? null;
-    }
-    const config = {
-      configurable: { thread_id: threadId, ...(checkpointId && { checkpoint_id: checkpointId }) },
-    };
-    return (await graphToUse.getState(config)) ?? null;
+    const { fullHistory } = await this.getHistory(threadId, graphToUse ?? undefined);
+    return fullHistory[0] ?? null;
   }
 
   private async createCheckpointer(): Promise<BaseCheckpointSaver> {

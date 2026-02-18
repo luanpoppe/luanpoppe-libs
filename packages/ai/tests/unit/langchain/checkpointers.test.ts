@@ -97,11 +97,54 @@ describe("AIMemory", () => {
       });
     });
 
-    it("deve lançar erro quando graph não é passado e agent não foi definido", async () => {
+    it("deve usar checkpointer.list quando graph e agent não estão disponíveis", async () => {
       const memory = new AIMemory({ type: "memory" });
-      await expect(memory.getHistory("1")).rejects.toThrow(
-        "É necessário passar graph em getHistory ou definir o agent"
-      );
+      const mockTuple1 = {
+        checkpoint: {
+          channel_values: { messages: [{ role: "user", content: "oi" }] },
+          ts: "2024-01-01T10:00:00Z",
+        },
+        config: { configurable: { thread_id: "1" } },
+        metadata: {},
+      };
+      const mockTuple2 = {
+        checkpoint: {
+          channel_values: {
+            messages: [
+              { role: "user", content: "oi" },
+              { role: "assistant", content: "olá" },
+            ],
+          },
+          ts: "2024-01-01T10:01:00Z",
+        },
+        config: { configurable: { thread_id: "1" } },
+        metadata: {},
+      };
+      const mockList = vi.fn(async function* () {
+        yield mockTuple2;
+        yield mockTuple1;
+      });
+      vi.spyOn(memory, "getCheckpointer").mockResolvedValue({
+        list: mockList,
+      } as any);
+
+      const result = await memory.getHistory("1");
+
+      expect(result.fullHistory).toHaveLength(2);
+      expect(result.fullHistory[0].values).toEqual(mockTuple2.checkpoint.channel_values);
+      expect(result.fullHistory[1].values).toEqual(mockTuple1.checkpoint.channel_values);
+      expect(result.messages).toHaveLength(2);
+      expect(result.messages[0]).toEqual({
+        role: "human",
+        createdAt: "2024-01-01T10:00:00Z",
+        content: "oi",
+      });
+      expect(result.messages[1]).toEqual({
+        role: "ai",
+        createdAt: "2024-01-01T10:01:00Z",
+        content: "olá",
+      });
+      expect(mockList).toHaveBeenCalledWith({ configurable: { thread_id: "1" } });
     });
   });
 
@@ -142,6 +185,30 @@ describe("AIMemory", () => {
       };
       const state = await memory.getState("1", mockGraph as any);
       expect(state).toEqual(mockState);
+    });
+
+    it("deve usar checkpointer quando graph não está disponível", async () => {
+      const memory = new AIMemory({ type: "memory" });
+      const mockTuple = {
+        checkpoint: {
+          channel_values: { messages: [{ role: "user", content: "oi" }] },
+          ts: "2024-01-01T10:00:00Z",
+        },
+        config: { configurable: { thread_id: "1" } },
+        metadata: {},
+      };
+      const mockList = vi.fn(async function* () {
+        yield mockTuple;
+      });
+      vi.spyOn(memory, "getCheckpointer").mockResolvedValue({
+        list: mockList,
+      } as any);
+
+      const state = await memory.getState("1");
+
+      expect(state).not.toBeNull();
+      expect(state?.values).toEqual({ messages: [{ role: "user", content: "oi" }] });
+      expect(mockList).toHaveBeenCalledWith({ configurable: { thread_id: "1" } });
     });
   });
 });

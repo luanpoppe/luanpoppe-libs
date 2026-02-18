@@ -1,4 +1,7 @@
+import { createAgent } from "langchain";
 import { AI } from "../../src/index";
+import { AIMemory } from "../../src/langchain/memory";
+import { AIModels } from "../../src/langchain/models";
 import { AIMessages } from "../../src/langchain/messages";
 import z from "zod";
 import "dotenv/config";
@@ -621,6 +624,55 @@ describe("AI E2E Tests", () => {
         expect(messages.every((m) => typeof m.createdAt === "string")).toBe(
           true,
         );
+      },
+    );
+
+    it(
+      "deve retornar histórico via getHistory usando apenas checkpointer - sem graph",
+      { timeout },
+      async () => {
+        if (!openAIApiKey) {
+          console.log("OPENAI_API_KEY não está configurada");
+          return;
+        }
+        const memory = new AIMemory({ type: "memory" });
+        const checkpointer = await memory.getCheckpointer();
+        const model = AIModels.gpt({
+          apiKey: openAIApiKey!,
+          model: "gpt-5-nano",
+        });
+        const agent = createAgent({
+          model,
+          checkpointer,
+          systemPrompt: "",
+        });
+
+        const threadId = "e2e-checkpointer-only-thread";
+
+        await agent.invoke(
+          { messages: [AIMessages.human("Responda apenas: recebido.")] },
+          { configurable: { thread_id: threadId } },
+        );
+
+        await agent.invoke(
+          { messages: [AIMessages.human("O que eu disse antes?")] },
+          { configurable: { thread_id: threadId } },
+        );
+
+        const { fullHistory, messages } = await memory.getHistory(threadId);
+
+        console.log({ messages });
+
+        expect(fullHistory.length).toBeGreaterThan(0);
+        expect(messages.length).toBeGreaterThanOrEqual(2);
+
+        const allContent = messages.map((m) => m.content).join(" ");
+        expect(allContent).toContain("Responda apenas");
+        expect(allContent).toContain("O que eu disse");
+
+        expect(
+          messages.every((m) => ["human", "ai", "tool"].includes(m.role)),
+        ).toBe(true);
       },
     );
   });
