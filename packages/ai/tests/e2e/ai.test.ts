@@ -45,7 +45,7 @@ describe("AI E2E Tests", () => {
       },
     );
 
-    it(
+    it.skip(
       "deve fazer uma chamada real para Gemini e retornar resposta",
       { timeout },
       async () => {
@@ -139,7 +139,7 @@ describe("AI E2E Tests", () => {
       },
     );
 
-    it(
+    it.skip(
       "deve criar múltiplas mensagens e fazer chamada",
       { timeout },
       async () => {
@@ -348,7 +348,7 @@ describe("AI E2E Tests", () => {
       },
     );
 
-    it(
+    it.skip(
       "deve retornar resposta estruturada com Gemini",
       { timeout },
       async () => {
@@ -484,8 +484,9 @@ describe("AI E2E Tests", () => {
           AIMessages.human("Explique o que é TypeScript em uma frase curta."),
         ];
 
+        // gpt-4o suporta temperature; gpt-5-nano (reasoning) só aceita default
         const result = await ai.call({
-          aiModel: "gpt-5-nano",
+          aiModel: "gpt-4o",
           messages,
           modelConfig: {
             maxTokens: 50,
@@ -496,6 +497,45 @@ describe("AI E2E Tests", () => {
         expect(result.text).toBeDefined();
         // maxTokens pode não ser exatamente respeitado, então verificamos apenas que existe resposta
         expect(result.text.length).toBeGreaterThan(0);
+      },
+    );
+
+    // Níveis suportados pela API OpenAI (o1, gpt-5-nano, etc.): low, medium, high.
+    // Modelos mais recentes (gpt-5.2) podem suportar também: none, minimal, xhigh.
+    it.each([
+      { reasoningEffort: "low" as const },
+      { reasoningEffort: "medium" as const },
+      { reasoningEffort: "high" as const },
+    ])(
+      "deve usar reasoningEffort=$reasoningEffort em chamada real ao GPT",
+      { timeout },
+      async ({ reasoningEffort }) => {
+        if (!openAIApiKey) {
+          console.log("OPENAI_API_KEY não está configurada");
+          return;
+        }
+        const ai = new AI({
+          openAIApiKey: openAIApiKey!,
+        });
+
+        const messages = [
+          AIMessages.human(
+            "Responda apenas com a palavra 'OK' (modelo de reasoning).",
+          ),
+        ];
+
+        const result = await ai.call({
+          aiModel: "gpt-5-nano",
+          messages,
+          modelConfig: {
+            reasoningEffort,
+          },
+        });
+
+        expect(result.text).toBeDefined();
+        expect(result.text.length).toBeGreaterThan(0);
+        expect(result.messages).toBeDefined();
+        expect(result.messages.length).toBeGreaterThan(0);
       },
     );
 

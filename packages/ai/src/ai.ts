@@ -243,10 +243,21 @@ export class AI {
   private getModel(params: AICallParams) {
     const { aiModel, modelConfig } = params;
 
+    const supportsReasoning =
+      aiModel.startsWith("gpt") ||
+      aiModel.startsWith("openrouter/openai/");
+
+    if (modelConfig?.reasoningEffort && !supportsReasoning) {
+      console.warn(
+        `[@luanpoppe/ai] O modelo "${aiModel}" não suporta reasoningEffort. O parâmetro será ignorado. Use modelos OpenAI (gpt*) ou OpenRouter com OpenAI (openrouter/openai/*).`,
+      );
+    }
+
     const config: LLMModelConfig = {
       model: aiModel,
       maxTokens: modelConfig?.maxTokens,
       temperature: modelConfig?.temperature,
+      reasoningEffort: supportsReasoning ? modelConfig?.reasoningEffort : undefined,
     };
 
     if (aiModel.startsWith("gpt")) {

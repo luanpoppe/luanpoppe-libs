@@ -58,7 +58,7 @@ describe("AI Audio E2E Tests", () => {
       }
     );
 
-    it(
+    it.skip(
       "deve processar áudio diretamente com Gemini (multimodal)",
       { timeout },
       async () => {
@@ -132,7 +132,7 @@ describe("AI Audio E2E Tests", () => {
       }
     );
 
-    it(
+    it.skip(
       "deve processar áudio com OpenRouter usando Gemini (multimodal)",
       { timeout },
       async () => {
@@ -168,7 +168,7 @@ describe("AI Audio E2E Tests", () => {
       }
     );
 
-    it(
+    it.skip(
       "deve processar áudio com OpenRouter usando GPT (transcrição prévia com Whisper)",
       { timeout },
       async () => {

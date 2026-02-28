@@ -293,6 +293,101 @@ describe("AI", () => {
       });
     });
 
+    it("deve passar reasoningEffort no modelConfig", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const mockResponse = {
+        messages: [{ content: "Resposta" } as any],
+      };
+
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(createAgent).mockReturnValue({
+        invoke: vi.fn().mockResolvedValue(mockResponse),
+      } as any);
+
+      await ai.call({
+        aiModel: "gpt-5-nano",
+        messages: mockMessages,
+        modelConfig: {
+          reasoningEffort: "medium",
+        },
+      });
+
+      expect(AIModels.gpt).toHaveBeenCalledWith({
+        model: "gpt-5-nano",
+        apiKey: mockTokens.openAIApiKey,
+        reasoningEffort: "medium",
+      });
+    });
+
+    it("deve exibir warning quando reasoningEffort é passado com modelo Gemini", async () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const mockResponse = {
+        messages: [{ content: "Resposta" } as any],
+      };
+
+      vi.mocked(AIModels.gemini).mockReturnValue(mockModel);
+      vi.mocked(createAgent).mockReturnValue({
+        invoke: vi.fn().mockResolvedValue(mockResponse),
+      } as any);
+
+      const aiWithGemini = new AI({
+        openAIApiKey: "test-key",
+        googleGeminiToken: "test-gemini-token",
+      });
+
+      await aiWithGemini.call({
+        aiModel: "gemini-2.5-flash",
+        messages: mockMessages,
+        modelConfig: {
+          reasoningEffort: "high",
+        },
+      });
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('O modelo "gemini-2.5-flash" não suporta reasoningEffort'),
+      );
+      expect(AIModels.gemini).toHaveBeenCalledWith(
+        expect.not.objectContaining({ reasoningEffort: expect.anything() }),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it("deve exibir warning quando reasoningEffort é passado com OpenRouter não-OpenAI", async () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const mockResponse = {
+        messages: [{ content: "Resposta" } as any],
+      };
+
+      vi.mocked(AIModels.openrouter).mockReturnValue(mockModel);
+      vi.mocked(createAgent).mockReturnValue({
+        invoke: vi.fn().mockResolvedValue(mockResponse),
+      } as any);
+
+      const aiWithOpenRouter = new AI({
+        openRouterApiKey: "test-openrouter-key",
+      });
+
+      await aiWithOpenRouter.call({
+        aiModel: "openrouter/google/gemini-2.5-flash",
+        messages: mockMessages,
+        modelConfig: {
+          reasoningEffort: "high",
+        },
+      });
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'O modelo "openrouter/google/gemini-2.5-flash" não suporta reasoningEffort',
+        ),
+      );
+      warnSpy.mockRestore();
+    });
+
     it("deve lançar erro quando memory está ativo e threadId não é fornecido", async () => {
       const aiWithMemory = new AI({
         openAIApiKey: "test-key",

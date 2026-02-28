@@ -101,6 +101,22 @@ describe("AIModels", () => {
         "OpenAI API key is not passed in the model parameters"
       );
     });
+
+    it("deve criar uma instância do ChatOpenAI com reasoningEffort", () => {
+      const config: LLMModelConfig = {
+        model: "gpt-5-nano",
+        apiKey: "test-api-key",
+        reasoningEffort: "high",
+      };
+
+      AIModels.gpt(config);
+
+      expect(ChatOpenAI).toHaveBeenCalledWith({
+        model: "gpt-5-nano",
+        apiKey: "test-api-key",
+        modelKwargs: { reasoning_effort: "high" },
+      });
+    });
   });
 
   describe("gemini", () => {
