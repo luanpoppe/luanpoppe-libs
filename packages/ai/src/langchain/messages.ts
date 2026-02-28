@@ -1,9 +1,28 @@
 import { SystemMessage, HumanMessage, AIMessage } from "langchain";
 import { AudioUtils } from "../utils/audio-utils";
+import { ImageUtils } from "../utils/image-utils";
 import type { AudioBuffer, AudioMimeType } from "../@types/audio";
+import type { ImageBuffer, ImageMimeType } from "../@types/image";
 import { AIAudioTranscription } from "./audio-transcription";
 
 export type MessageInput = SystemMessage | HumanMessage | AIMessage;
+
+export type ImageContentBlock = {
+  type: "image";
+  source_type: "base64";
+  data: string;
+  mime_type: ImageMimeType;
+  metadata?: Record<string, unknown>;
+};
+
+export type HumanMessageWithImageOptions = {
+  image: {
+    buffer: ImageBuffer;
+    mimeType?: ImageMimeType;
+    filename?: string;
+  };
+  text?: string;
+};
 
 export type AudioContentBlock = {
   type: "audio";
@@ -31,6 +50,34 @@ export class AIMessages {
 
   static human(message: string): HumanMessage {
     return new HumanMessage(message);
+  }
+
+  static humanImage(options: HumanMessageWithImageOptions): HumanMessage {
+    const { image, text } = options;
+    const { buffer, mimeType, filename } = image;
+
+    const base64Data = ImageUtils.bufferToBase64(buffer);
+    const detectedMimeType =
+      mimeType ?? ImageUtils.detectImageMimeType(buffer, filename);
+
+    const content: Array<{ type: "text"; text: string } | ImageContentBlock> =
+      [];
+
+    if (text) {
+      content.push({ type: "text", text });
+    }
+
+    const imageBlock: ImageContentBlock = {
+      type: "image",
+      source_type: "base64",
+      data: base64Data,
+      mime_type: detectedMimeType,
+    };
+    content.push(imageBlock);
+
+    return new HumanMessage({
+      content: content as any,
+    } as any);
   }
 
   static async humanAudio(

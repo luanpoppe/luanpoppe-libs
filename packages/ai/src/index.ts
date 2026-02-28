@@ -36,10 +36,14 @@ export type {
 } from "./langchain/memory";
 export { AIAudioTranscription } from "./langchain/audio-transcription";
 export { AudioUtils } from "./utils/audio-utils";
+export { ImageUtils } from "./utils/image-utils";
 export type { AudioBuffer, AudioMimeType } from "./@types/audio";
+export type { ImageBuffer, ImageMimeType } from "./@types/image";
 export type {
   AudioContentBlock,
   HumanMessageWithAudioOptions,
+  ImageContentBlock,
+  HumanMessageWithImageOptions,
 } from "./langchain/messages";
 export type {
   WhisperModel,

@@ -175,4 +175,82 @@ describe("AIMessages", () => {
       expect(callArgs.content[0].mime_type).toBe("audio/mp4");
     });
   });
+
+  describe("humanImage", () => {
+    it("deve criar uma HumanMessage com conteúdo de imagem e texto", () => {
+      const imageBuffer = Buffer.from("fake image data");
+      const text = "Descreva esta imagem";
+
+      const result = AIMessages.humanImage({
+        image: {
+          buffer: imageBuffer,
+          filename: "imagem.jpg",
+        },
+        text,
+      });
+
+      expect(result).toBeDefined();
+      expect(HumanMessage).toHaveBeenCalled();
+      const callArgs = (HumanMessage as any).mock.calls[0][0];
+      expect(callArgs.content).toBeInstanceOf(Array);
+      expect(callArgs.content.length).toBe(2);
+      expect(callArgs.content[0].type).toBe("text");
+      expect(callArgs.content[0].text).toBe(text);
+      expect(callArgs.content[1].type).toBe("image");
+      expect(callArgs.content[1].source_type).toBe("base64");
+      expect(callArgs.content[1].mime_type).toBe("image/jpeg");
+      expect(callArgs.content[1].data).toBeDefined();
+    });
+
+    it("deve criar uma HumanMessage apenas com imagem (sem texto)", () => {
+      const imageBuffer = Buffer.from("fake image data");
+
+      const result = AIMessages.humanImage({
+        image: {
+          buffer: imageBuffer,
+          filename: "imagem.png",
+        },
+      });
+
+      expect(result).toBeDefined();
+      expect(HumanMessage).toHaveBeenCalled();
+      const callArgs = (HumanMessage as any).mock.calls[0][0];
+      expect(callArgs.content).toBeInstanceOf(Array);
+      expect(callArgs.content.length).toBe(1);
+      expect(callArgs.content[0].type).toBe("image");
+      expect(callArgs.content[0].source_type).toBe("base64");
+      expect(callArgs.content[0].mime_type).toBe("image/png");
+    });
+
+    it("deve detectar MIME type automaticamente pela extensão", () => {
+      const imageBuffer = Buffer.from("fake image data");
+
+      const result = AIMessages.humanImage({
+        image: {
+          buffer: imageBuffer,
+          filename: "foto.webp",
+        },
+      });
+
+      expect(result).toBeDefined();
+      const callArgs = (HumanMessage as any).mock.calls[0][0];
+      expect(callArgs.content[0].mime_type).toBe("image/webp");
+    });
+
+    it("deve usar MIME type fornecido mesmo com extensão", () => {
+      const imageBuffer = Buffer.from("fake image data");
+
+      const result = AIMessages.humanImage({
+        image: {
+          buffer: imageBuffer,
+          mimeType: "image/png",
+          filename: "imagem.jpg",
+        },
+      });
+
+      expect(result).toBeDefined();
+      const callArgs = (HumanMessage as any).mock.calls[0][0];
+      expect(callArgs.content[0].mime_type).toBe("image/png");
+    });
+  });
 });
