@@ -15,6 +15,7 @@ export type {
   AICallStructuredOutputParams,
   AICallStructuredOutputReturn,
 } from "./@types/ai-call";
+export type { AIModelNames } from "./@types/model-names";
 
 export { AIModels } from "./langchain/models";
 export type { LLMModelConfig, ReasoningEffort } from "./langchain/models";
