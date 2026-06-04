@@ -388,6 +388,106 @@ describe("AI", () => {
       warnSpy.mockRestore();
     });
 
+    it("deve aplicar provider only deepseek por padrão em openrouter/deepseek/*", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const mockResponse = {
+        messages: [{ content: "Resposta" } as any],
+      };
+
+      vi.mocked(AIModels.openrouter).mockReturnValue(mockModel);
+      vi.mocked(createAgent).mockReturnValue({
+        invoke: vi.fn().mockResolvedValue(mockResponse),
+      } as any);
+
+      const aiWithOpenRouter = new AI({
+        openRouterApiKey: "test-openrouter-key",
+      });
+
+      await aiWithOpenRouter.call({
+        aiModel: "openrouter/deepseek/deepseek-v3.2",
+        messages: mockMessages,
+      });
+
+      expect(AIModels.openrouter).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: "deepseek/deepseek-v3.2",
+          apiKey: "test-openrouter-key",
+          openRouterProvider: undefined,
+          openRouterAllowAllProviders: undefined,
+        }),
+      );
+    });
+
+    it("deve repassar openRouterProvider e openRouterAllowAllProviders no modelConfig", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const mockResponse = {
+        messages: [{ content: "Resposta" } as any],
+      };
+      const openRouterProvider = {
+        only: ["deepinfra"],
+        max_price: { prompt: 1, completion: 2 },
+      };
+
+      vi.mocked(AIModels.openrouter).mockReturnValue(mockModel);
+      vi.mocked(createAgent).mockReturnValue({
+        invoke: vi.fn().mockResolvedValue(mockResponse),
+      } as any);
+
+      const aiWithOpenRouter = new AI({
+        openRouterApiKey: "test-openrouter-key",
+      });
+
+      await aiWithOpenRouter.call({
+        aiModel: "openrouter/deepseek/deepseek-r1",
+        messages: mockMessages,
+        modelConfig: {
+          openRouterProvider,
+          openRouterAllowAllProviders: false,
+        },
+      });
+
+      expect(AIModels.openrouter).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: "deepseek/deepseek-r1",
+          openRouterProvider,
+          openRouterAllowAllProviders: false,
+        }),
+      );
+    });
+
+    it("deve repassar openRouterAllowAllProviders true para liberar todos os providers", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const mockResponse = {
+        messages: [{ content: "Resposta" } as any],
+      };
+
+      vi.mocked(AIModels.openrouter).mockReturnValue(mockModel);
+      vi.mocked(createAgent).mockReturnValue({
+        invoke: vi.fn().mockResolvedValue(mockResponse),
+      } as any);
+
+      const aiWithOpenRouter = new AI({
+        openRouterApiKey: "test-openrouter-key",
+      });
+
+      await aiWithOpenRouter.call({
+        aiModel: "openrouter/deepseek/deepseek-v3.2",
+        messages: mockMessages,
+        modelConfig: {
+          openRouterAllowAllProviders: true,
+        },
+      });
+
+      expect(AIModels.openrouter).toHaveBeenCalledWith(
+        expect.objectContaining({
+          openRouterAllowAllProviders: true,
+        }),
+      );
+    });
+
     it("deve lançar erro quando memory está ativo e threadId não é fornecido", async () => {
       const aiWithMemory = new AI({
         openAIApiKey: "test-key",

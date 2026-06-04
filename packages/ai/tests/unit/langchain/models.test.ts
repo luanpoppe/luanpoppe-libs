@@ -1,4 +1,8 @@
-import { AIModels, LLMModelConfig } from "../../../src/langchain/models";
+import {
+  AIModels,
+  LLMModelConfig,
+  resolveOpenRouterProvider,
+} from "../../../src/langchain/models";
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
@@ -203,6 +207,146 @@ describe("AIModels", () => {
       expect(() => AIModels.gemini(config)).toThrow(
         "Google Gemini API key is not passed in the model parameters"
       );
+    });
+  });
+
+  describe("resolveOpenRouterProvider", () => {
+    it("deve retornar only deepseek para modelos deepseek/ sem config", () => {
+      expect(
+        resolveOpenRouterProvider("deepseek/deepseek-v3.2", {}),
+      ).toEqual({ only: ["deepseek"] });
+    });
+
+    it("não deve aplicar default para modelos que não são deepseek/", () => {
+      expect(
+        resolveOpenRouterProvider("openai/gpt-5-nano", {}),
+      ).toBeUndefined();
+    });
+
+    it("deve retornar undefined quando openRouterAllowAllProviders é true", () => {
+      expect(
+        resolveOpenRouterProvider("deepseek/deepseek-v3.2", {
+          openRouterAllowAllProviders: true,
+        }),
+      ).toBeUndefined();
+    });
+
+    it("deve usar openRouterProvider explícito em vez do default", () => {
+      const custom = { only: ["deepinfra"] };
+      expect(
+        resolveOpenRouterProvider("deepseek/deepseek-r1", {
+          openRouterProvider: custom,
+        }),
+      ).toEqual(custom);
+    });
+  });
+
+  describe("openrouter", () => {
+    it("deve criar ChatOpenAI com configurações básicas", () => {
+      const config: LLMModelConfig = {
+        model: "openai/gpt-5-nano",
+        apiKey: "test-openrouter-key",
+      };
+
+      AIModels.openrouter(config);
+
+      expect(ChatOpenAI).toHaveBeenCalledWith({
+        model: "openai/gpt-5-nano",
+        apiKey: "test-openrouter-key",
+        configuration: {
+          baseURL: "https://openrouter.ai/api/v1",
+        },
+      });
+    });
+
+    it("deve aplicar provider only deepseek por padrão em modelos deepseek/", () => {
+      const config: LLMModelConfig = {
+        model: "deepseek/deepseek-v3.2",
+        apiKey: "test-openrouter-key",
+      };
+
+      AIModels.openrouter(config);
+
+      expect(ChatOpenAI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          modelKwargs: { provider: { only: ["deepseek"] } },
+        }),
+      );
+    });
+
+    it("não deve enviar provider em modelos não-deepseek", () => {
+      const config: LLMModelConfig = {
+        model: "openai/gpt-5-nano",
+        apiKey: "test-openrouter-key",
+      };
+
+      AIModels.openrouter(config);
+
+      expect(ChatOpenAI).toHaveBeenCalledWith(
+        expect.not.objectContaining({
+          modelKwargs: expect.anything(),
+        }),
+      );
+    });
+
+    it("não deve aplicar default deepseek quando openRouterAllowAllProviders é true", () => {
+      const config: LLMModelConfig = {
+        model: "deepseek/deepseek-v3.2",
+        apiKey: "test-openrouter-key",
+        openRouterAllowAllProviders: true,
+      };
+
+      AIModels.openrouter(config);
+
+      expect(ChatOpenAI).toHaveBeenCalledWith(
+        expect.not.objectContaining({
+          modelKwargs: expect.anything(),
+        }),
+      );
+    });
+
+    it("deve enviar openRouterProvider customizado", () => {
+      const provider = {
+        only: ["deepinfra", "fireworks"],
+        max_price: { prompt: 0.5, completion: 1 },
+        sort: "price" as const,
+      };
+
+      AIModels.openrouter({
+        model: "deepseek/deepseek-r1",
+        apiKey: "test-openrouter-key",
+        openRouterProvider: provider,
+      });
+
+      expect(ChatOpenAI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          modelKwargs: { provider },
+        }),
+      );
+    });
+
+    it("deve mesclar provider com reasoningEffort", () => {
+      AIModels.openrouter({
+        model: "deepseek/deepseek-r1",
+        apiKey: "test-openrouter-key",
+        reasoningEffort: "high",
+        openRouterProvider: { only: ["deepseek"] },
+      });
+
+      expect(ChatOpenAI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          modelKwargs: {
+            reasoning_effort: "high",
+            provider: { only: ["deepseek"] },
+          },
+        }),
+      );
+    });
+
+    it("deve lançar erro quando apiKey não é fornecida", () => {
+      expect(() =>
+        AIModels.openrouter({ model: "openai/gpt-5-nano" }),
+      ).toThrow("OpenRouter API key is not passed in the model parameters");
     });
   });
 });
