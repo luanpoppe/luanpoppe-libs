@@ -18,8 +18,14 @@ export type {
 export type { AIModelNames } from "./@types/model-names";
 
 export { AIModels } from "./langchain/models";
+export {
+  DEFAULT_OLLAMA_BASE_URL,
+  DEFAULT_LOCAL_API_KEY,
+} from "./langchain/models";
 export type {
   LLMModelConfig,
+  OllamaModelConfig,
+  OpenAICompatibleModelConfig,
   ReasoningEffort,
   OpenRouterMaxPrice,
   OpenRouterProviderPreferences,
@@ -60,6 +66,22 @@ export type {
   GeminiTranscriptionOptions,
 } from "./audio";
 export { ANTHROPIC_NO_NATIVE_AUDIO } from "./audio";
+export { AIEmbeddings, ANTHROPIC_NO_NATIVE_EMBEDDINGS } from "./embeddings";
+export type {
+  AIEmbeddingModelNames,
+  OpenAIEmbeddingModel,
+  GeminiEmbeddingModel,
+  OpenRouterEmbeddingModel,
+  OpenRouterPrefixedEmbeddingModel,
+  EmbeddingResult,
+  EmbeddingUsage,
+  OpenAIEmbeddingOptions,
+  OpenRouterEmbeddingOptions,
+  GeminiEmbeddingOptions,
+  GeminiEmbeddingTaskType,
+  EmbedApiKeys,
+  EmbedOptions,
+} from "./embeddings";
 /** @deprecated Use AIAudio instead */
 export { AIAudioTranscription } from "./langchain/audio-transcription";
 export { AudioUtils } from "./utils/audio-utils";

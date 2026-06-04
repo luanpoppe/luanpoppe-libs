@@ -31,6 +31,43 @@ pnpm test:e2e -- ai-deepseek-structured-output
 ```
 Requer `OPENROUTER_API_KEY`. Valida `callStructuredOutput` com `openrouter/deepseek/deepseek-v4-flash` e `deepseek-v4-pro`.
 
+### Modelos locais (Ollama + LM Studio / OpenAI-compatible)
+```bash
+pnpm test:e2e -- ai-local-models
+```
+
+**Ollama (prefixo `ollama/`, API nativa):**
+1. Instale e inicie o Ollama (`ollama serve`)
+2. Baixe um modelo: `ollama pull llama3.2`
+3. No `.env`: `OLLAMA_E2E=1`, opcionalmente `OLLAMA_BASE_URL` e `OLLAMA_MODEL_NAME`
+
+**LM Studio / Ollama `/v1` (prefixo `local/`):**
+1. Ative o servidor local compatível com OpenAI (ex.: LM Studio em `http://localhost:1234/v1`)
+2. No `.env`: `LOCAL_BASE_URL=http://localhost:1234/v1` e `LOCAL_MODEL_NAME` com o nome exato do modelo no servidor
+
+```typescript
+const ai = new AI({
+  ollamaBaseUrl: "http://127.0.0.1:11434",
+  localBaseUrl: "http://localhost:1234/v1",
+  localApiKey: "not-needed",
+});
+
+await ai.call({ aiModel: "ollama/llama3.2", messages: [...] });
+await ai.call({ aiModel: "local/seu-modelo", messages: [...] });
+```
+
+Limitações: tools e structured output dependem do modelo local; áudio (STT/TTS) continua via `AIAudio` na nuvem.
+
+### Embeddings (`AIEmbeddings`)
+```bash
+pnpm test:e2e -- ai-embeddings
+```
+- OpenAI: `OPENAI_API_KEY` — `text-embedding-3-small`
+- Gemini: `GOOGLE_GEMINI_TOKEN` — `gemini-embedding-001`
+- OpenRouter: `OPENROUTER_API_KEY` — `openrouter/openai/text-embedding-3-small`
+
+Listar modelos: `GET https://openrouter.ai/api/v1/embeddings/models`
+
 ### STT/TTS multiprovider (`AIAudio`)
 ```bash
 pnpm test:e2e -- ai-audio-multiprovider

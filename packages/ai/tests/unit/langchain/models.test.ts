@@ -1,10 +1,12 @@
 import {
   AIModels,
+  DEFAULT_OLLAMA_BASE_URL,
   LLMModelConfig,
   resolveOpenRouterProvider,
 } from "../../../src/langchain/models";
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatOllama } from "@langchain/ollama";
 
 // Mock das dependências
 vi.mock("@langchain/openai", () => ({
@@ -13,6 +15,10 @@ vi.mock("@langchain/openai", () => ({
 
 vi.mock("@langchain/google-genai", () => ({
   ChatGoogleGenerativeAI: vi.fn(),
+}));
+
+vi.mock("@langchain/ollama", () => ({
+  ChatOllama: vi.fn(),
 }));
 
 describe("AIModels", () => {
@@ -347,6 +353,78 @@ describe("AIModels", () => {
       expect(() =>
         AIModels.openrouter({ model: "openai/gpt-5-nano" }),
       ).toThrow("OpenRouter API key is not passed in the model parameters");
+    });
+  });
+
+  describe("ollama", () => {
+    it("deve criar ChatOllama com configurações básicas e baseUrl padrão", () => {
+      AIModels.ollama({ model: "llama3.2" });
+
+      expect(ChatOllama).toHaveBeenCalledWith({
+        model: "llama3.2",
+        baseUrl: DEFAULT_OLLAMA_BASE_URL,
+      });
+    });
+
+    it("deve criar ChatOllama com baseUrl, temperature e numCtx customizados", () => {
+      AIModels.ollama({
+        model: "qwen2.5:7b",
+        baseUrl: "http://custom:11434",
+        temperature: 0.2,
+        numCtx: 8192,
+        maxTokens: 512,
+      });
+
+      expect(ChatOllama).toHaveBeenCalledWith({
+        model: "qwen2.5:7b",
+        baseUrl: "http://custom:11434",
+        temperature: 0.2,
+        numCtx: 8192,
+        numPredict: 512,
+      });
+    });
+  });
+
+  describe("openaiCompatible", () => {
+    it("deve criar ChatOpenAI com baseURL local", () => {
+      AIModels.openaiCompatible({
+        model: "meta-llama/Llama-3.2-3B-Instruct",
+        baseURL: "http://localhost:1234/v1",
+      });
+
+      expect(ChatOpenAI).toHaveBeenCalledWith({
+        model: "meta-llama/Llama-3.2-3B-Instruct",
+        apiKey: "not-needed",
+        configuration: {
+          baseURL: "http://localhost:1234/v1",
+        },
+      });
+    });
+
+    it("deve aceitar apiKey e parâmetros opcionais", () => {
+      AIModels.openaiCompatible({
+        model: "my-model",
+        baseURL: "http://127.0.0.1:11434/v1",
+        apiKey: "lm-studio",
+        maxTokens: 1000,
+        temperature: 0.5,
+      });
+
+      expect(ChatOpenAI).toHaveBeenCalledWith({
+        model: "my-model",
+        apiKey: "lm-studio",
+        maxTokens: 1000,
+        temperature: 0.5,
+        configuration: {
+          baseURL: "http://127.0.0.1:11434/v1",
+        },
+      });
+    });
+
+    it("deve lançar erro quando baseURL não é fornecida", () => {
+      expect(() =>
+        AIModels.openaiCompatible({ model: "x", baseURL: "" }),
+      ).toThrow("baseURL é obrigatório");
     });
   });
 });

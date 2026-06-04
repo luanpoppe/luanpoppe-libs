@@ -1,4 +1,8 @@
-import { AIModels, LLMModelConfig } from "./langchain/models";
+import {
+  AIModels,
+  DEFAULT_OLLAMA_BASE_URL,
+  LLMModelConfig,
+} from "./langchain/models";
 import {
   isDeepSeekJsonObjectOnlyModel,
   mergeSystemPromptWithJsonSchema,
@@ -32,6 +36,12 @@ type AIConstructor = {
   googleGeminiToken?: string;
   openAIApiKey?: string;
   openRouterApiKey?: string;
+  /** URL base da API nativa do Ollama (modelos `ollama/*`). Padrão: http://127.0.0.1:11434 */
+  ollamaBaseUrl?: string;
+  /** URL base OpenAI-compatible para modelos `local/*` (ex.: http://localhost:1234/v1) */
+  localBaseUrl?: string;
+  /** API key enviada ao servidor local; muitos aceitam qualquer valor */
+  localApiKey?: string;
   /** Lista padrão de modelos de fallback (usada em call/callStructuredOutput quando não passada no método) */
   aiModelsFallback?: AIModelNames[];
   /** Configuração de persistência de histórico (memory, sqlite, postgres, redis, mongodb) ou instância AIMemory */
@@ -318,6 +328,35 @@ export class AI {
         openRouterProvider: modelConfig?.openRouterProvider,
         openRouterAllowAllProviders: modelConfig?.openRouterAllowAllProviders,
         openRouterForceJsonObject: modelConfig?.openRouterForceJsonObject,
+      });
+    }
+
+    if (aiModel.startsWith("ollama/")) {
+      const modelName = aiModel.replace(/^ollama\//, "");
+      return AIModels.ollama({
+        model: modelName,
+        baseUrl: modelConfig?.baseUrl ?? this.config.ollamaBaseUrl ?? DEFAULT_OLLAMA_BASE_URL,
+        maxTokens: config.maxTokens,
+        temperature: config.temperature,
+        numCtx: modelConfig?.numCtx,
+      });
+    }
+
+    if (aiModel.startsWith("local/")) {
+      const modelName = aiModel.replace(/^local\//, "");
+      const baseURL = modelConfig?.baseUrl ?? this.config.localBaseUrl;
+      if (!baseURL) {
+        throw new Error(
+          '[@luanpoppe/ai] localBaseUrl é obrigatório no construtor de AI (ou modelConfig.baseUrl na chamada) para modelos "local/*". ' +
+            "Ex.: localBaseUrl: \"http://localhost:1234/v1\" (LM Studio) ou \"http://127.0.0.1:11434/v1\" (Ollama OpenAI-compatible).",
+        );
+      }
+      return AIModels.openaiCompatible({
+        model: modelName,
+        baseURL,
+        apiKey: this.config.localApiKey,
+        maxTokens: config.maxTokens,
+        temperature: config.temperature,
       });
     }
 

@@ -114,4 +114,15 @@ type OpenRouterProvidersModels =
 
 type OpenRouterModels = `openrouter/${OpenRouterProvidersModels}`;
 
-export type AIModelNames = ChatGPTModels | GeminiModels | OpenRouterModels;
+/** Modelos via API nativa do Ollama (prefixo `ollama/`) */
+type OllamaModels = `ollama/${string}`;
+
+/** Modelos via API compatível com OpenAI — LM Studio, Ollama `/v1`, vLLM, etc. (prefixo `local/`) */
+type LocalModels = `local/${string}`;
+
+export type AIModelNames =
+  | ChatGPTModels
+  | GeminiModels
+  | OpenRouterModels
+  | OllamaModels
+  | LocalModels;

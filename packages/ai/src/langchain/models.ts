@@ -2,8 +2,13 @@ import {
   ChatGoogleGenerativeAI,
   GoogleGenerativeAIChatInput,
 } from "@langchain/google-genai";
+import { ChatOllama, type ChatOllamaInput } from "@langchain/ollama";
 import { ChatOpenAI, ChatOpenAIFields } from "@langchain/openai";
 import type { OpenRouterProviderPreferences } from "../@types/openrouter-provider";
+
+export const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434";
+
+export const DEFAULT_LOCAL_API_KEY = "not-needed";
 
 export type {
   OpenRouterMaxPrice,
@@ -14,11 +19,31 @@ export type {
 /** Nível de esforço de raciocínio para modelos OpenAI (o1, gpt-5, etc.). Valores: "low" | "medium" | "high" */
 export type ReasoningEffort = "low" | "medium" | "high";
 
-export type LLMModelConfig = {
+export type OllamaModelConfig = {
   model: string;
+  baseUrl?: string | undefined;
+  maxTokens?: number | undefined;
+  temperature?: number | undefined;
+  numCtx?: number | undefined;
+};
+
+export type OpenAICompatibleModelConfig = {
+  model: string;
+  baseURL: string;
   apiKey?: string | undefined;
   maxTokens?: number | undefined;
   temperature?: number | undefined;
+};
+
+export type LLMModelConfig = {
+  model: string;
+  apiKey?: string | undefined;
+  /** Override da URL do servidor (Ollama nativo ou OpenAI-compatible local) */
+  baseUrl?: string | undefined;
+  maxTokens?: number | undefined;
+  temperature?: number | undefined;
+  /** Tamanho do contexto (Ollama nativo, `num_ctx`) */
+  numCtx?: number | undefined;
   /** Nível de esforço de raciocínio (modelos OpenAI: o1, gpt-5, etc.) */
   reasoningEffort?: ReasoningEffort | undefined;
   /** Preferências de roteamento de providers do OpenRouter */
@@ -146,6 +171,44 @@ export class AIModels {
           : {}),
       };
     }
+
+    return new ChatOpenAI(options);
+  }
+
+  static ollama(params: OllamaModelConfig) {
+    const { model, baseUrl, maxTokens, temperature, numCtx } = params;
+
+    const options: ChatOllamaInput = {
+      model,
+      baseUrl: baseUrl ?? DEFAULT_OLLAMA_BASE_URL,
+    };
+
+    if (temperature !== undefined) options.temperature = temperature;
+    if (numCtx !== undefined) options.numCtx = numCtx;
+    if (maxTokens !== undefined) options.numPredict = maxTokens;
+
+    return new ChatOllama(options);
+  }
+
+  static openaiCompatible(params: OpenAICompatibleModelConfig) {
+    const { model, baseURL, apiKey, maxTokens, temperature } = params;
+
+    if (!baseURL) {
+      throw new Error(
+        "baseURL é obrigatório para servidores OpenAI-compatible (LM Studio, Ollama /v1, vLLM, etc.).",
+      );
+    }
+
+    const options: ChatOpenAIFields = {
+      model,
+      apiKey: apiKey ?? DEFAULT_LOCAL_API_KEY,
+      configuration: {
+        baseURL,
+      },
+    };
+
+    if (maxTokens) options.maxTokens = maxTokens;
+    if (temperature !== undefined) options.temperature = temperature;
 
     return new ChatOpenAI(options);
   }

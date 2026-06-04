@@ -20,7 +20,10 @@ vi.mock("../../src/langchain/models", () => ({
     gpt: vi.fn(),
     gemini: vi.fn(),
     openrouter: vi.fn(),
+    ollama: vi.fn(),
+    openaiCompatible: vi.fn(),
   },
+  DEFAULT_OLLAMA_BASE_URL: "http://127.0.0.1:11434",
 }));
 
 vi.mock("../../src/langchain/memory", async () => {
@@ -262,6 +265,77 @@ describe("AI", () => {
           messages: mockMessages,
         }),
       ).rejects.toThrow("Model not supported");
+    });
+
+    it("deve usar modelo Ollama quando aiModel começa com 'ollama/'", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const mockResponse = {
+        messages: [{ content: "Resposta local" } as any],
+      };
+
+      vi.mocked(AIModels.ollama).mockReturnValue(mockModel);
+      vi.mocked(createAgent).mockReturnValue({
+        invoke: vi.fn().mockResolvedValue(mockResponse),
+      } as any);
+
+      const localAi = new AI({ ollamaBaseUrl: "http://ollama:11434" });
+
+      await localAi.call({
+        aiModel: "ollama/llama3.2",
+        messages: mockMessages,
+      });
+
+      expect(AIModels.ollama).toHaveBeenCalledWith({
+        model: "llama3.2",
+        baseUrl: "http://ollama:11434",
+        maxTokens: undefined,
+        temperature: undefined,
+        numCtx: undefined,
+      });
+    });
+
+    it("deve usar modelo local OpenAI-compatible quando aiModel começa com 'local/'", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const mockResponse = {
+        messages: [{ content: "LM Studio" } as any],
+      };
+
+      vi.mocked(AIModels.openaiCompatible).mockReturnValue(mockModel);
+      vi.mocked(createAgent).mockReturnValue({
+        invoke: vi.fn().mockResolvedValue(mockResponse),
+      } as any);
+
+      const localAi = new AI({
+        localBaseUrl: "http://localhost:1234/v1",
+        localApiKey: "test-local-key",
+      });
+
+      await localAi.call({
+        aiModel: "local/qwen2.5-7b-instruct",
+        messages: mockMessages,
+        modelConfig: { temperature: 0.3 },
+      });
+
+      expect(AIModels.openaiCompatible).toHaveBeenCalledWith({
+        model: "qwen2.5-7b-instruct",
+        baseURL: "http://localhost:1234/v1",
+        apiKey: "test-local-key",
+        maxTokens: undefined,
+        temperature: 0.3,
+      });
+    });
+
+    it("deve lançar erro para local/* sem localBaseUrl", async () => {
+      const mockMessages = [AIMessages.human("Teste")];
+
+      await expect(
+        ai.call({
+          aiModel: "local/my-model",
+          messages: mockMessages,
+        }),
+      ).rejects.toThrow("localBaseUrl é obrigatório");
     });
 
     it("deve passar modelConfig quando fornecido", async () => {
