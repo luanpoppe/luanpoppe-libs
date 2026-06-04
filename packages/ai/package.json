@@ -1,6 +1,6 @@
 {
   "name": "@luanpoppe/ai",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "TypeScript SDK for LLM chat, structured output, memory, audio STT/TTS, and embeddings via OpenAI, Gemini, OpenRouter, and local models (Ollama/LM Studio).",
   "main": "dist/index.js",
   "scripts": {
