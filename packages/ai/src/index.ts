@@ -18,7 +18,14 @@ export type {
 export type { AIModelNames } from "./@types/model-names";
 
 export { AIModels } from "./langchain/models";
-export type { LLMModelConfig, ReasoningEffort } from "./langchain/models";
+export type {
+  LLMModelConfig,
+  ReasoningEffort,
+  OpenRouterMaxPrice,
+  OpenRouterProviderPreferences,
+  OpenRouterProviderSort,
+} from "./langchain/models";
+export { resolveOpenRouterProvider } from "./langchain/models";
 export { AIMessages } from "./langchain/messages";
 export { AITools } from "./langchain/tools";
 export { AIMemory } from "./langchain/memory";

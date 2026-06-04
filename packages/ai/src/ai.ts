@@ -278,6 +278,8 @@ export class AI {
         ...config,
         model: modelName,
         apiKey: this.config.openRouterApiKey,
+        openRouterProvider: modelConfig?.openRouterProvider,
+        openRouterAllowAllProviders: modelConfig?.openRouterAllowAllProviders,
       });
     }
 
