@@ -1,6 +1,15 @@
 import { AIMessages } from "../../../src/langchain/messages";
 import { SystemMessage, HumanMessage, AIMessage } from "langchain";
 
+vi.mock("../../../src/audio", () => ({
+  AIAudio: {
+    transcribeWithWhisper: vi.fn().mockResolvedValue("texto whisper"),
+    transcribeOpenRouter: vi
+      .fn()
+      .mockResolvedValue({ text: "texto openrouter" }),
+  },
+}));
+
 // Mock do langchain
 vi.mock("langchain", () => {
   class MockSystemMessage {
@@ -173,6 +182,34 @@ describe("AIMessages", () => {
       expect(result).toBeDefined();
       const callArgs = (HumanMessage as any).mock.calls[0][0];
       expect(callArgs.content[0].mime_type).toBe("audio/mp4");
+    });
+
+    it("provider openai usa STT prévio via AIAudio", async () => {
+      const { AIAudio } = await import("../../../src/audio");
+      const audioBuffer = Buffer.from("fake audio data");
+
+      const result = await AIMessages.humanAudio({
+        audio: { buffer: audioBuffer, mimeType: "audio/mp3" },
+        provider: "openai",
+        openAIApiKey: "sk-test",
+      });
+
+      expect(AIAudio.transcribeWithWhisper).toHaveBeenCalled();
+      expect(result.content).toContain("texto whisper");
+    });
+
+    it("provider openrouter usa transcribeOpenRouter", async () => {
+      const { AIAudio } = await import("../../../src/audio");
+      const audioBuffer = Buffer.from("fake audio data");
+
+      const result = await AIMessages.humanAudio({
+        audio: { buffer: audioBuffer, mimeType: "audio/mp3" },
+        provider: "openrouter",
+        openRouterApiKey: "or-test",
+      });
+
+      expect(AIAudio.transcribeOpenRouter).toHaveBeenCalled();
+      expect(result.content).toContain("texto openrouter");
     });
   });
 

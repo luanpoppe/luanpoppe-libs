@@ -42,6 +42,25 @@ export type {
   HistoryMessageItem,
   GetHistoryResult,
 } from "./langchain/memory";
+export { AIAudio } from "./audio";
+export type {
+  WhisperModel,
+  OpenAITranscriptionOptions,
+  OpenAITranscriptionResponseFormat,
+  OpenAITranscriptionDetailed,
+  OpenRouterTranscriptionOptions,
+  OpenRouterTranscriptionResult,
+  OpenAISpeechOptions,
+  OpenAISpeechModel,
+  OpenRouterSpeechOptions,
+  SpeechResult,
+  TranscriptionWord,
+  TranscriptionSegment,
+  DiarizedSegment,
+  GeminiTranscriptionOptions,
+} from "./audio";
+export { ANTHROPIC_NO_NATIVE_AUDIO } from "./audio";
+/** @deprecated Use AIAudio instead */
 export { AIAudioTranscription } from "./langchain/audio-transcription";
 export { AudioUtils } from "./utils/audio-utils";
 export { ImageUtils } from "./utils/image-utils";
@@ -53,10 +72,8 @@ export type {
   ImageContentBlock,
   HumanMessageWithImageOptions,
 } from "./langchain/messages";
-export type {
-  WhisperModel,
-  WhisperTranscriptionOptions,
-} from "./langchain/audio-transcription";
+/** @deprecated Use OpenAITranscriptionOptions from AIAudio */
+export type { WhisperTranscriptionOptions } from "./langchain/audio-transcription";
 
 // Aliases para compatibilidade (deprecated - serão removidos em 2.0.0)
 /** @deprecated Use AI instead. Will be removed in 2.0.0 */

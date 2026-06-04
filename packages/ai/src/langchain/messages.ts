@@ -3,7 +3,7 @@ import { AudioUtils } from "../utils/audio-utils";
 import { ImageUtils } from "../utils/image-utils";
 import type { AudioBuffer, AudioMimeType } from "../@types/audio";
 import type { ImageBuffer, ImageMimeType } from "../@types/image";
-import { AIAudioTranscription } from "./audio-transcription";
+import { AIAudio } from "../audio";
 
 export type MessageInput = SystemMessage | HumanMessage | AIMessage;
 
@@ -39,8 +39,11 @@ export type HumanMessageWithAudioOptions = {
     filename?: string;
   };
   text?: string;
-  provider?: "openai" | "gemini" | "auto";
+  provider?: "openai" | "gemini" | "openrouter" | "auto";
   openAIApiKey?: string;
+  openRouterApiKey?: string;
+  /** Modelo OpenRouter STT (ex.: openai/whisper-1) quando provider é openrouter ou auto com OR */
+  openRouterTranscriptionModel?: string;
 };
 
 export class AIMessages {
@@ -83,16 +86,31 @@ export class AIMessages {
   static async humanAudio(
     options: HumanMessageWithAudioOptions
   ): Promise<HumanMessage> {
-    const { audio, text, provider = "auto", openAIApiKey } = options;
+    const {
+      audio,
+      text,
+      provider = "auto",
+      openAIApiKey,
+      openRouterApiKey,
+      openRouterTranscriptionModel,
+    } = options;
     const { buffer, mimeType, filename } = audio;
+
+    const resolvedProvider = this.resolveAudioProvider(
+      provider,
+      openAIApiKey,
+      openRouterApiKey,
+    );
 
     return this.createHumanMessageWithAudio(
       buffer,
       text,
       mimeType,
       filename,
-      provider,
-      openAIApiKey
+      resolvedProvider,
+      openAIApiKey,
+      openRouterApiKey,
+      openRouterTranscriptionModel,
     );
   }
 
@@ -100,22 +118,45 @@ export class AIMessages {
     return new AIMessage(message);
   }
 
+  private static resolveAudioProvider(
+    provider: "openai" | "gemini" | "openrouter" | "auto",
+    openAIApiKey?: string,
+    openRouterApiKey?: string,
+  ): "openai" | "gemini" | "openrouter" {
+    if (provider !== "auto") return provider;
+    if (openAIApiKey) return "openai";
+    if (openRouterApiKey) return "openrouter";
+    return "gemini";
+  }
+
   private static async createHumanMessageWithAudio(
     audioBuffer: AudioBuffer,
     text?: string,
     mimeType?: AudioMimeType,
     filename?: string,
-    provider: "openai" | "gemini" | "auto" = "auto",
-    openAIApiKey?: string
+    provider: "openai" | "gemini" | "openrouter" = "gemini",
+    openAIApiKey?: string,
+    openRouterApiKey?: string,
+    openRouterTranscriptionModel = "openai/whisper-1",
   ): Promise<HumanMessage> {
-    // Para OpenAI, faz transcrição prévia automaticamente devido à limitação da API
-    if (provider === "openai")
+    if (provider === "openai") {
       return await this.processAudioOpenAi(
         audioBuffer,
         mimeType,
         text,
-        openAIApiKey
+        openAIApiKey,
       );
+    }
+
+    if (provider === "openrouter") {
+      return await this.processAudioOpenRouter(
+        audioBuffer,
+        mimeType,
+        text,
+        openRouterApiKey,
+        openRouterTranscriptionModel,
+      );
+    }
 
     // Para Gemini e outros, usa multimodal direto (trabalho síncrono, mas retorna Promise para compatibilidade)
     const base64Data = AudioUtils.bufferToBase64(audioBuffer);
@@ -168,10 +209,10 @@ export class AIMessages {
         ? { format: mimeType }
         : { language: "pt" };
 
-      const transcribedText = await AIAudioTranscription.transcribeWithWhisper(
+      const transcribedText = await AIAudio.transcribeWithWhisper(
         audioBuffer,
         transcriptionOptions,
-        openAIApiKey
+        openAIApiKey,
       );
 
       // Combina o texto original (se fornecido) com a transcrição
@@ -191,5 +232,36 @@ export class AIMessages {
           "Certifique-se de que o arquivo de áudio é válido e está em um formato suportado (mp3, wav, etc.)."
       );
     }
+  }
+
+  private static async processAudioOpenRouter(
+    audioBuffer: AudioBuffer,
+    mimeType?: AudioMimeType,
+    text?: string,
+    openRouterApiKey?: string,
+    openRouterTranscriptionModel = "openai/whisper-1",
+  ) {
+    if (!openRouterApiKey) {
+      throw new Error(
+        "openRouterApiKey é necessária quando provider é 'openrouter'.",
+      );
+    }
+
+    const format = mimeType ?? AudioUtils.detectAudioMimeType(audioBuffer);
+    const { text: transcribedText } = await AIAudio.transcribeOpenRouter(
+      audioBuffer,
+      {
+        model: openRouterTranscriptionModel,
+        format,
+        ...(text ? {} : { language: "pt" }),
+      },
+      openRouterApiKey,
+    );
+
+    const finalText = text
+      ? `${text}\n\nÁudio transcrito: ${transcribedText}`
+      : `Áudio transcrito: ${transcribedText}`;
+
+    return new HumanMessage(finalText);
   }
 }

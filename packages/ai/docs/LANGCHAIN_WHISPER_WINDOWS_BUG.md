@@ -1,5 +1,7 @@
 # Bug do LangChain no Windows: Transcrição de Áudio com Whisper - 2026-02-02
 
+> **Nota (2026):** `@luanpoppe/ai` não usa mais `OpenAIWhisperAudio` de `@langchain/community` (pacote sunset pela LangChain). A transcrição OpenAI usa o SDK `openai` diretamente (`toFile` com buffer em memória). Este documento permanece como contexto histórico do bug no loader do LangChain.
+
 ## Resumo
 
 O loader `OpenAIWhisperAudio` do LangChain passa o **caminho completo do arquivo** (ex: `C:\Users\...\whisper-xxx.webm`) para a API da OpenAI. No Windows, isso pode causar falhas no envio multipart devido a backslashes e caracteres especiais no path.

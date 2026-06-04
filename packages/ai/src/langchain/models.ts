@@ -28,6 +28,11 @@ export type LLMModelConfig = {
    * Use para aceitar o roteamento padrão do OpenRouter (todos os providers).
    */
   openRouterAllowAllProviders?: boolean | undefined;
+  /**
+   * Força `response_format: { type: "json_object" }` no OpenRouter (ex.: DeepSeek).
+   * Uso interno via `callStructuredOutput`.
+   */
+  openRouterForceJsonObject?: boolean | undefined;
 };
 
 const DEEPSEEK_OPENROUTER_PROVIDER: OpenRouterProviderPreferences = {
@@ -107,6 +112,7 @@ export class AIModels {
       reasoningEffort,
       openRouterProvider,
       openRouterAllowAllProviders,
+      openRouterForceJsonObject,
     } = params;
 
     if (!apiKey)
@@ -130,11 +136,14 @@ export class AIModels {
       openRouterAllowAllProviders,
     });
 
-    if (reasoningEffort || provider) {
+    if (reasoningEffort || provider || openRouterForceJsonObject) {
       options.modelKwargs = {
         ...(options.modelKwargs ?? {}),
         ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
         ...(provider ? { provider } : {}),
+        ...(openRouterForceJsonObject
+          ? { response_format: { type: "json_object" } }
+          : {}),
       };
     }
 

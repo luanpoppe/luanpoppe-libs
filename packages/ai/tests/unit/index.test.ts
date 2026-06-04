@@ -776,6 +776,41 @@ describe("AI", () => {
       expect(result.response).toEqual(mockStructuredResponse);
     });
 
+    it("deve usar json_object para DeepSeek sem responseFormat no agente", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const outputSchema = z.object({ sum: z.number(), product: z.number() });
+
+      vi.mocked(AIModels.openrouter).mockReturnValue(mockModel);
+      vi.mocked(createAgent).mockReturnValue({
+        invoke: vi.fn().mockResolvedValue({
+          messages: [{ content: '{"sum":11,"product":28}' }],
+        }),
+      } as any);
+
+      const aiWithOpenRouter = new AI({
+        openRouterApiKey: "test-openrouter-key",
+      });
+
+      const result = await aiWithOpenRouter.callStructuredOutput({
+        aiModel: "openrouter/deepseek/deepseek-v4-flash",
+        messages: mockMessages,
+        outputSchema,
+      });
+
+      expect(AIModels.openrouter).toHaveBeenCalledWith(
+        expect.objectContaining({
+          openRouterForceJsonObject: true,
+        }),
+      );
+      expect(createAgent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          responseFormat: undefined,
+        }),
+      );
+      expect(result.response).toEqual({ sum: 11, product: 28 });
+    });
+
     it("deve validar o schema e lançar erro se inválido", async () => {
       const mockModel = {} as any;
       const mockMessages = [AIMessages.human("Teste")];

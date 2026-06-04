@@ -25,6 +25,22 @@ O arquivo `.env` é carregado automaticamente pelo `dotenv` configurado no `vite
 
 ## Executando os testes
 
+### DeepSeek structured output
+```bash
+pnpm test:e2e -- ai-deepseek-structured-output
+```
+Requer `OPENROUTER_API_KEY`. Valida `callStructuredOutput` com `openrouter/deepseek/deepseek-v4-flash` e `deepseek-v4-pro`.
+
+### STT/TTS multiprovider (`AIAudio`)
+```bash
+pnpm test:e2e -- ai-audio-multiprovider
+```
+- OpenAI: `OPENAI_API_KEY` (STT detailed + TTS)
+- OpenRouter: `OPENROUTER_API_KEY` (STT + TTS)
+  - TTS Gemini: `google/gemini-3.1-flash-tts-preview` + `Kore` + `pcm`
+  - TTS Mistral: `mistralai/voxtral-mini-tts-2603` + `en_paul_neutral` + `mp3` (exige providers liberados na conta OR)
+- Listar modelos TTS: `GET https://openrouter.ai/api/v1/models?output_modalities=speech`
+
 ### Todos os testes E2E
 ```bash
 pnpm test:e2e

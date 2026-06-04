@@ -1,4 +1,9 @@
 import { AIModels, LLMModelConfig } from "./langchain/models";
+import {
+  isDeepSeekJsonObjectOnlyModel,
+  mergeSystemPromptWithJsonSchema,
+  parseJsonFromAssistantMessages,
+} from "./langchain/structured-output";
 import z from "zod";
 import { createAgent, modelRetryMiddleware } from "langchain";
 import type { AIAgent } from "./@types/agent";
@@ -164,22 +169,54 @@ export class AI {
 
     const { result: response, agent } = await this.invokeWithRetryAndFallback(
       params,
-      (paramsForModel) =>
-        createAgent({
-          ...this.standardAgent(paramsForModel, checkpointer),
-          responseFormat: this.normalizeSchemaForOpenAI(
-            outputSchema,
-            paramsForModel.aiModel,
-          ) as any,
-        }),
+      (paramsForModel) => {
+        const useJsonObject = isDeepSeekJsonObjectOnlyModel(
+          paramsForModel.aiModel,
+        );
+        const agentParams = useJsonObject
+          ? this.withDeepSeekJsonObjectParams(paramsForModel, outputSchema)
+          : paramsForModel;
+
+        return createAgent({
+          ...this.standardAgent(agentParams, checkpointer),
+          ...(useJsonObject
+            ? { responseFormat: undefined as any }
+            : {
+                responseFormat: this.normalizeSchemaForOpenAI(
+                  outputSchema,
+                  paramsForModel.aiModel,
+                ) as any,
+              }),
+        });
+      },
       (agent) => agent.invoke({ messages }, invokeConfig as any),
     );
 
     this._memory?.setAgent(agent);
 
-    const parsedResponse = outputSchema.parse(response?.structuredResponse);
+    const parsedResponse =
+      response?.structuredResponse != null
+        ? outputSchema.parse(response.structuredResponse)
+        : outputSchema.parse(parseJsonFromAssistantMessages(response.messages));
 
     return { response: parsedResponse };
+  }
+
+  private withDeepSeekJsonObjectParams<T extends AICallParams>(
+    params: T,
+    outputSchema: z.ZodSchema,
+  ): T {
+    return {
+      ...params,
+      systemPrompt: mergeSystemPromptWithJsonSchema(
+        params.systemPrompt,
+        outputSchema,
+      ),
+      modelConfig: {
+        ...params.modelConfig,
+        openRouterForceJsonObject: true,
+      },
+    };
   }
 
   /**
@@ -280,6 +317,7 @@ export class AI {
         apiKey: this.config.openRouterApiKey,
         openRouterProvider: modelConfig?.openRouterProvider,
         openRouterAllowAllProviders: modelConfig?.openRouterAllowAllProviders,
+        openRouterForceJsonObject: modelConfig?.openRouterForceJsonObject,
       });
     }
 
