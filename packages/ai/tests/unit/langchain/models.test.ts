@@ -73,6 +73,22 @@ describe("AIModels", () => {
       });
     });
 
+    it("deve aplicar temperature 0 (falsy) em vez de descartar", () => {
+      const config: LLMModelConfig = {
+        model: "gpt-4",
+        apiKey: "test-api-key",
+        temperature: 0,
+      };
+
+      AIModels.gpt(config);
+
+      expect(ChatOpenAI).toHaveBeenCalledWith({
+        model: "gpt-4",
+        apiKey: "test-api-key",
+        temperature: 0,
+      });
+    });
+
     it("deve criar uma instância do ChatOpenAI com todas as opções", () => {
       const config: LLMModelConfig = {
         model: "gpt-4o",

@@ -1,13 +1,12 @@
 {
-  "name": "luanpoppe-lib",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
+  "name": "luanpoppe-libs",
+  "private": true,
   "license": "ISC",
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:unit": "pnpm -r test:unit"
+  },
   "packageManager": "pnpm@10.26.2"
 }

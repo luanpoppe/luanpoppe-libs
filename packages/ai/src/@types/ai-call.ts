@@ -5,13 +5,22 @@ import type { AIModelNames } from "./model-names";
 import type { MessageInput } from "../langchain/messages";
 import type z from "zod";
 
-export type AICallParams = {
-  agent?: {
-    middleware?: AgentMiddleware[];
-    tools?: (ServerTool | ClientTool)[];
-  };
+/** Sub-agente LangChain: middlewares extras e ferramentas expostas ao modelo. */
+export type AICallAgentConfig = {
+  middleware?: AgentMiddleware[];
+  tools?: (ServerTool | ClientTool)[];
+};
 
-  modelConfig?: Omit<LLMModelConfig, "apiKey" | "model">;
+/**
+ * Opções de modelo por chamada — sem `apiKey` e `model`, que vêm do construtor do
+ * `AI` e do campo `aiModel`. Nomeado para o consumidor tipar config sem derivar o `Omit`.
+ */
+export type AICallModelConfig = Omit<LLMModelConfig, "apiKey" | "model">;
+
+export type AICallParams = {
+  agent?: AICallAgentConfig;
+
+  modelConfig?: AICallModelConfig;
 
   aiModel: AIModelNames;
   /** Lista de modelos de fallback quando o principal falhar após todos os retries (suporta OpenRouter, Gemini, GPT) */

@@ -57,7 +57,7 @@ describe("speech-openrouter", () => {
       "or-key",
     );
 
-    const body = mockSpeechCreate.mock.calls[0][0] as Record<string, unknown>;
+    const body = mockSpeechCreate.mock.calls[0]![0] as Record<string, unknown>;
     const provider = body.provider as Record<string, unknown>;
     expect(provider.only).toEqual(["deepseek"]);
     expect(provider.options).toEqual({

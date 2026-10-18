@@ -159,7 +159,7 @@ describe("AI", () => {
         systemPrompt: "Você é um assistente útil",
       });
 
-      const callArgs = vi.mocked(createAgent).mock.calls[0][0];
+      const callArgs = vi.mocked(createAgent).mock.calls[0]![0];
       expect(callArgs.systemPrompt).toBe("Você é um assistente útil");
     });
 
@@ -180,7 +180,7 @@ describe("AI", () => {
         messages: mockMessages,
       });
 
-      const callArgs = vi.mocked(createAgent).mock.calls[0][0];
+      const callArgs = vi.mocked(createAgent).mock.calls[0]![0];
       expect(callArgs.middleware).toBeDefined();
       expect(callArgs.middleware?.length).toBeGreaterThan(0);
     });
@@ -779,7 +779,7 @@ describe("AI", () => {
         threadId: "thread-123",
       });
 
-      const callArgs = vi.mocked(createAgent).mock.calls[0][0];
+      const callArgs = vi.mocked(createAgent).mock.calls[0]![0];
       expect(callArgs.checkpointer).toBe(mockCheckpointer);
       expect(mockInvoke).toHaveBeenCalledWith(
         { messages: mockMessages },
@@ -908,6 +908,31 @@ describe("AI", () => {
           outputSchema,
         }),
       ).rejects.toThrow();
+    });
+
+    it("deve aceitar null em campo optional e converter para undefined", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const outputSchema = z.object({
+        name: z.string(),
+        age: z.number().optional(),
+      });
+
+      vi.mocked(AIModels.gpt).mockReturnValue(mockModel);
+      vi.mocked(createAgent).mockReturnValue({
+        invoke: vi.fn().mockResolvedValue({
+          structuredResponse: { name: "João", age: null },
+        }),
+      } as any);
+
+      const result = await ai.callStructuredOutput({
+        aiModel: "gpt-4",
+        messages: mockMessages,
+        outputSchema,
+      });
+
+      expect(result.response.name).toBe("João");
+      expect(result.response.age).toBeUndefined();
     });
   });
 

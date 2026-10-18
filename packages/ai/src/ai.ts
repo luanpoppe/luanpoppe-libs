@@ -26,13 +26,23 @@ import type {
 } from "./@types/ai-call";
 
 export type {
+  AICallAgentConfig,
+  AICallModelConfig,
   AICallParams,
   AICallReturn,
   AICallStructuredOutputParams,
   AICallStructuredOutputReturn,
 } from "./@types/ai-call";
 
-type AIConstructor = {
+/** Retries por modelo quando `maxRetries` não é informado na chamada. */
+const DEFAULT_MAX_RETRIES = 3;
+/** Fator de backoff exponencial entre retries. */
+const RETRY_BACKOFF_FACTOR = 2.0;
+/** Atraso inicial (ms) antes do primeiro retry. */
+const RETRY_INITIAL_DELAY_MS = 1000;
+
+/** Opções aceitas pelo construtor de `AI`. Exportado para o consumidor tipar a config. */
+export type AIConstructor = {
   googleGeminiToken?: string;
   openAIApiKey?: string;
   openRouterApiKey?: string;
@@ -204,12 +214,46 @@ export class AI {
 
     this._memory?.setAgent(agent);
 
-    const parsedResponse =
+    const rawResponse =
       response?.structuredResponse != null
-        ? outputSchema.parse(response.structuredResponse)
-        : outputSchema.parse(parseJsonFromAssistantMessages(response.messages));
+        ? response.structuredResponse
+        : parseJsonFromAssistantMessages(response.messages);
+
+    const validationSchema = this.buildValidationSchema(outputSchema);
+    const parsedResponse = validationSchema.parse(rawResponse) as z.infer<
+      typeof outputSchema
+    >;
 
     return { response: parsedResponse };
+  }
+
+  /**
+   * Constrói um schema de validação tolerante a `null` em campos opcionais.
+   *
+   * Modelos (ex.: OpenAI) podem devolver `null` onde o schema do consumidor usa
+   * `.optional()` — que aceita `undefined`, não `null`. Envelopar o campo com um
+   * preprocess que mapeia `null` -> `undefined` faz o parse aceitar a resposta
+   * sem alterar a forma nem o tipo esperados pelo consumidor.
+   *
+   * Limitação atual: só o nível de topo de objetos (mesma limitação da
+   * normalização para OpenAI).
+   */
+  private buildValidationSchema<T extends z.ZodSchema>(schema: T): z.ZodSchema {
+    if (!(schema instanceof z.ZodObject)) {
+      return schema;
+    }
+
+    const shape = schema.shape;
+    const newShape: Record<string, z.ZodTypeAny> = {};
+
+    for (const [key, value] of Object.entries(shape)) {
+      newShape[key] =
+        value instanceof z.ZodOptional
+          ? z.preprocess((raw) => (raw === null ? undefined : raw), value)
+          : value;
+    }
+
+    return z.object(newShape);
   }
 
   private withDeepSeekJsonObjectParams<T extends AICallParams>(
@@ -367,7 +411,7 @@ export class AI {
     params: AICallParams,
     checkpointer?: BaseCheckpointSaver,
   ): Parameters<typeof createAgent>[0] {
-    const { systemPrompt, maxRetries = 3 } = params;
+    const { systemPrompt, maxRetries = DEFAULT_MAX_RETRIES } = params;
 
     const model = this.getModel(params);
     return {
@@ -387,8 +431,8 @@ export class AI {
     return [
       modelRetryMiddleware({
         maxRetries,
-        backoffFactor: 2.0,
-        initialDelayMs: 1000,
+        backoffFactor: RETRY_BACKOFF_FACTOR,
+        initialDelayMs: RETRY_INITIAL_DELAY_MS,
         onFailure: "error",
       }),
     ];

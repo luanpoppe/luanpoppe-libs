@@ -17,16 +17,22 @@ describe("AIMemory", () => {
       expect(cp1).toBe(cp2);
     });
 
-    it("deve criar MongoDBSaver com url quando pacotes estão instalados", async () => {
-      const memory = new AIMemory({
-        type: "mongodb",
-        url: "mongodb://localhost:27017/test",
-      });
-      const checkpointer = await memory.getCheckpointer();
-      expect(checkpointer).toBeDefined();
-      expect(checkpointer).toHaveProperty("get");
-      expect(checkpointer).toHaveProperty("put");
-    });
+    // O import dinâmico de @langchain/langgraph-checkpoint-mongodb + mongodb
+    // leva ~4s; o timeout padrão de 5s estoura sob carga. Timeout folgado aqui.
+    it(
+      "deve criar MongoDBSaver com url quando pacotes estão instalados",
+      async () => {
+        const memory = new AIMemory({
+          type: "mongodb",
+          url: "mongodb://localhost:27017/test",
+        });
+        const checkpointer = await memory.getCheckpointer();
+        expect(checkpointer).toBeDefined();
+        expect(checkpointer).toHaveProperty("get");
+        expect(checkpointer).toHaveProperty("put");
+      },
+      20_000,
+    );
   });
 
   describe("getHistory", () => {
@@ -91,7 +97,7 @@ describe("AIMemory", () => {
       memory.setAgent(mockGraph as any);
       const result = await memory.getHistory("1");
       expect(result.messages).toHaveLength(1);
-      expect(result.messages[0].content).toBe("teste");
+      expect(result.messages[0]!.content).toBe("teste");
       expect(mockGraph.getStateHistory).toHaveBeenCalledWith({
         configurable: { thread_id: "1" },
       });
@@ -131,8 +137,8 @@ describe("AIMemory", () => {
       const result = await memory.getHistory("1");
 
       expect(result.fullHistory).toHaveLength(2);
-      expect(result.fullHistory[0].values).toEqual(mockTuple2.checkpoint.channel_values);
-      expect(result.fullHistory[1].values).toEqual(mockTuple1.checkpoint.channel_values);
+      expect(result.fullHistory[0]!.values).toEqual(mockTuple2.checkpoint.channel_values);
+      expect(result.fullHistory[1]!.values).toEqual(mockTuple1.checkpoint.channel_values);
       expect(result.messages).toHaveLength(2);
       expect(result.messages[0]).toEqual({
         role: "human",

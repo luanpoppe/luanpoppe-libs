@@ -2,30 +2,11 @@ import type OpenAI from "openai";
 import { resolveOpenRouterProvider } from "../langchain/models";
 import { createOpenRouterOpenAIClient } from "../utils/openrouter-client";
 import type { EmbeddingResult, OpenRouterEmbeddingOptions } from "./types";
-import { normalizeInput, stripOpenRouterPrefix } from "./utils";
-
-function mapEmbeddingResponse(
-  response: OpenAI.CreateEmbeddingResponse,
-  model: string,
-): EmbeddingResult {
-  const embeddings = response.data
-    .sort((a, b) => a.index - b.index)
-    .map((item) => item.embedding as number[]);
-
-  const result: EmbeddingResult = {
-    embeddings,
-    model: response.model ?? model,
-  };
-
-  if (response.usage) {
-    result.usage = {
-      prompt_tokens: response.usage.prompt_tokens,
-      total_tokens: response.usage.total_tokens,
-    };
-  }
-
-  return result;
-}
+import {
+  mapEmbeddingResponse,
+  normalizeInput,
+  stripOpenRouterPrefix,
+} from "./utils";
 
 export async function embedOpenRouter(
   input: string | string[],

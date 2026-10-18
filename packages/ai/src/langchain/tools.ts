@@ -1,22 +1,30 @@
 import { tool } from "langchain";
 import z from "zod";
 
-export type CreateToolParams = {
-  toolFunction: Parameters<typeof tool>[0];
+/**
+ * Parâmetros de `AITools.createTool`. Genérico no `schema` para que
+ * `toolFunction` receba o tipo inferido (`z.infer<TSchema>`) em vez de `unknown`.
+ */
+export type CreateToolParams<TSchema extends z.ZodSchema = z.ZodSchema> = {
+  toolFunction: (input: z.infer<TSchema>) => unknown;
   name: string;
   description: string;
-  schema: z.ZodSchema;
+  schema: TSchema;
 };
 
 export class AITools {
-  createTool(params: CreateToolParams) {
+  createTool<TSchema extends z.ZodSchema>(
+    params: CreateToolParams<TSchema>,
+  ): ReturnType<typeof tool> {
     const { toolFunction } = params;
     const { name, description, schema } = params;
 
-    return tool(toolFunction, {
+    // `tool` tem generics internos sensíveis ao schema; o cast mantém a assinatura
+    // pública simples sem arrastar tipos não-portáveis do LangChain para o .d.ts.
+    return tool(toolFunction as Parameters<typeof tool>[0], {
       name,
       description,
       schema,
-    });
+    }) as unknown as ReturnType<typeof tool>;
   }
 }

@@ -37,7 +37,7 @@ describe("transcription-openrouter", () => {
     );
 
     const body = JSON.parse(
-      (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      (mockFetch.mock.calls[0]![1] as RequestInit).body as string,
     );
     expect(body.model).toBe("openai/whisper-1");
     expect(body.input_audio.format).toBe("mp3");
@@ -53,7 +53,7 @@ describe("transcription-openrouter", () => {
     );
 
     const body = JSON.parse(
-      (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      (mockFetch.mock.calls[0]![1] as RequestInit).body as string,
     );
     expect(body.provider).toEqual({ only: ["deepseek"] });
   });

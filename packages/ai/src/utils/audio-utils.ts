@@ -1,21 +1,9 @@
 import type { AudioBuffer, AudioMimeType } from "../@types/audio";
+import { BufferUtils } from "./buffer-utils";
 
 export class AudioUtils {
   static bufferToBase64(buffer: AudioBuffer): string {
-    if (buffer instanceof Buffer) {
-      return buffer.toString("base64");
-    }
-
-    if (buffer instanceof ArrayBuffer) {
-      const uint8Array = new Uint8Array(buffer);
-      return Buffer.from(uint8Array).toString("base64");
-    }
-
-    if (buffer instanceof Uint8Array) {
-      return Buffer.from(buffer).toString("base64");
-    }
-
-    throw new Error("Tipo de buffer não suportado");
+    return BufferUtils.bufferToBase64(buffer);
   }
 
   static detectMimeTypeFromExtension(filename?: string): AudioMimeType | null {

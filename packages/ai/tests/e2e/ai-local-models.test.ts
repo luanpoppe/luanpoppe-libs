@@ -42,9 +42,12 @@ describe("AI E2E — modelos locais", () => {
         "deve responder via servidor local (LM Studio, Ollama /v1, etc.)",
         { timeout },
         async () => {
+          // `localBaseUrl` é undefined só quando o bloco é pulado (skipIf acima).
+          const baseUrl = localBaseUrl!;
+          const localApiKey = process.env.LOCAL_API_KEY;
           const ai = new AI({
-            localBaseUrl,
-            localApiKey: process.env.LOCAL_API_KEY,
+            localBaseUrl: baseUrl,
+            ...(localApiKey ? { localApiKey } : {}),
           });
 
           const result = await ai.call({

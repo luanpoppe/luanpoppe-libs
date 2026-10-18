@@ -1,5 +1,6 @@
 import type { AudioBuffer, AudioMimeType } from "../@types/audio";
 import { MIME_TO_EXTENSION } from "../@types/audio";
+import { BufferUtils } from "../utils/buffer-utils";
 
 export function getAudioExtension(format?: string | AudioMimeType): string {
   if (!format) return "mp3";
@@ -10,11 +11,9 @@ export function getAudioExtension(format?: string | AudioMimeType): string {
 }
 
 export function toAudioBuffer(audioBuffer: AudioBuffer): Buffer {
-  if (audioBuffer instanceof Buffer) return audioBuffer;
-  if (audioBuffer instanceof ArrayBuffer) return Buffer.from(audioBuffer);
-  return Buffer.from(audioBuffer as Uint8Array);
+  return BufferUtils.toBuffer(audioBuffer);
 }
 
 export function bufferToBase64(audioBuffer: AudioBuffer): string {
-  return toAudioBuffer(audioBuffer).toString("base64");
+  return BufferUtils.bufferToBase64(audioBuffer);
 }

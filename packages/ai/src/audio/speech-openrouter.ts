@@ -111,7 +111,15 @@ export async function speakOpenRouterStream(
   };
 
   if (options.speed !== undefined) body.speed = options.speed;
-  if (provider) body.provider = provider;
+  if (provider || options.instructions) {
+    const mergedProvider: Record<string, unknown> = { ...(provider ?? {}) };
+    if (options.instructions) {
+      mergedProvider.options = {
+        openai: { instructions: options.instructions },
+      };
+    }
+    body.provider = mergedProvider;
+  }
 
   const stream = await client.audio.speech.create(
     body as unknown as Parameters<typeof client.audio.speech.create>[0],

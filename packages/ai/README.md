@@ -40,6 +40,8 @@ pnpm add @luanpoppe/ai
 
 **Peer requirements:** Node.js 20+ and API keys for the cloud providers you use. Local models only need a running Ollama or OpenAI-compatible server (no cloud API key).
 
+> **Zod:** structured output and tools use Zod. The package depends on **Zod v4** (`^4`); if your app brings its own `zod`, use v4 so the schema types line up.
+
 **Optional dependencies** (install only if you need that checkpointer):
 
 | Package | Use case |
@@ -63,7 +65,7 @@ const ai = new AI({
 });
 
 const { text } = await ai.call({
-  aiModel: "gpt-4o",
+  aiModel: "gpt-5.4",
   messages: [AIMessages.human("Say hello in one sentence.")],
 });
 
@@ -81,7 +83,7 @@ const ai = new AI({
   openAIApiKey: "sk-...",           // models starting with gpt*
   googleGeminiToken: "...",         // models starting with gemini*
   openRouterApiKey: "sk-or-...",    // models starting with openrouter/*
-  aiModelsFallback: ["gpt-4o-mini"], // default fallback list (optional)
+  aiModelsFallback: ["gpt-5.4-mini"], // default fallback list (optional)
   memory: { type: "memory" },       // optional — see AIMemory
 });
 ```
@@ -108,7 +110,7 @@ const ai = new AI({
 import { AI, AIMessages } from "@luanpoppe/ai";
 
 const { text, messages } = await ai.call({
-  aiModel: "openrouter/anthropic/claude-sonnet-4.6",
+  aiModel: "openrouter/anthropic/claude-sonnet-5",
   systemPrompt: "You are a helpful assistant.",
   messages: [
     AIMessages.human("What is 2 + 2?"),
@@ -155,7 +157,7 @@ const schema = z.object({
 });
 
 const { response } = await ai.callStructuredOutput({
-  aiModel: "gpt-4o",
+  aiModel: "gpt-5.4",
   outputSchema: schema,
   messages: [AIMessages.human("Extract: João is 30 years old.")],
 });
@@ -191,17 +193,21 @@ Structured output uses LangChain `responseFormat` when the model supports it. Ca
 
 ## Model names
 
-`AIModelNames` is a TypeScript union for autocomplete and safety.
+`AIModelNames` is a TypeScript union that drives autocomplete for the models known to the library. The per-provider unions are exported too — `ChatGPTModels`, `GeminiModels`, `AnthropicModels`, `DeepSeekModels`, `QwenModels`, `MoonshotModels`, `XiaomiModels`, `ZAiModels`, `MiniMaxModels`, `OpenRouterModels`, `OllamaModels`, `LocalModels` — if you want to type against a specific family.
+
+> **Escape hatch:** the aggregate `AIModelNames` ends with `| (string & {})`, so **any** model string is accepted. A brand-new model — or an OpenRouter slug not yet listed — works without waiting for a library release; the listed names just provide autocomplete. The per-provider unions above remain strict if you prefer compile-time checks.
 
 | Prefix | Provider | Example |
 |--------|----------|---------|
-| `gpt-*`, `o3`, `o4-mini` | OpenAI | `"gpt-4o"`, `"gpt-5.4"` |
-| `gemini-*` | Google Gemini | `"gemini-2.5-flash"` |
-| `openrouter/<provider>/<model>` | OpenRouter | `"openrouter/deepseek/deepseek-v4-flash"` |
+| `gpt-*`, `o3`, `o4-mini` | OpenAI | `"gpt-5.4"`, `"gpt-5.6"`, `"gpt-6-astra"` |
+| `gemini-*` | Google Gemini | `"gemini-3.5-flash"`, `"gemini-3.8-flash"`, `"gemini-4-argon"` |
+| `openrouter/<provider>/<model>` | OpenRouter | `"openrouter/deepseek/deepseek-v4-pro"`, `"openrouter/anthropic/claude-opus-4.8"`, `"openrouter/qwen/qwen3.8-max"` |
 | `ollama/<model>` | Ollama (native API) | `"ollama/llama3.2"`, `"ollama/qwen2.5:7b"` |
 | `local/<model>` | OpenAI-compatible local server | `"local/meta-llama/Llama-3.2-3B-Instruct"` |
 
-OpenRouter slug format: `openrouter/{provider}/{model}` — e.g. `openrouter/openai/gpt-4o`, `openrouter/anthropic/claude-sonnet-4.6`, `openrouter/google/gemini-2.5-flash`.
+**Anthropic models are available only through OpenRouter** (`openrouter/anthropic/...`) — there is no direct Anthropic provider prefix in `AIModels`.
+
+OpenRouter slug format: `openrouter/{provider}/{model}` — e.g. `openrouter/openai/gpt-5.4`, `openrouter/anthropic/claude-sonnet-5`, `openrouter/google/gemini-3.5-flash`, `openrouter/moonshotai/kimi-k3`, `openrouter/z-ai/glm-5.3`.
 
 For `ollama/*` and `local/*`, the segment after the prefix must match the model name on your server (`ollama list` or LM Studio model id).
 
@@ -279,7 +285,7 @@ await ai.call({
 - **`callStructuredOutput`:** support depends on the local model. Small models may need plain JSON in the reply; the library does not apply OpenAI schema normalization to `ollama/*` or `local/*`.
 - **Tools (`agent.tools`):** requires a model with function calling (e.g. some Llama 3.1+ variants on Ollama).
 - **Audio:** STT/TTS stays on `AIAudio` (cloud APIs). Local chat does not replace Whisper/TTS.
-- **Fallback:** `aiModelsFallback` can mix local and cloud models, e.g. `["gpt-4o-mini"]` after `ollama/llama3.2`.
+- **Fallback:** `aiModelsFallback` can mix local and cloud models, e.g. `["gpt-5.4-mini"]` after `ollama/llama3.2`.
 
 ### Constants
 
@@ -325,8 +331,8 @@ await ai.call({
 await ai.call({
   aiModel: "openrouter/deepseek/deepseek-v4-flash",
   aiModelsFallback: [
-    "openrouter/openai/gpt-4o-mini",
-    "gpt-4o-mini",
+    "openrouter/openai/gpt-5.4-mini",
+    "gpt-5.4-mini",
   ],
   messages: [...],
 });
@@ -374,7 +380,7 @@ const msg = await AIMessages.humanAudio({
   openAIApiKey: process.env.OPENAI_API_KEY,
 });
 
-await ai.call({ aiModel: "gpt-4o", messages: [msg] });
+await ai.call({ aiModel: "gpt-5.4", messages: [msg] });
 ```
 
 > **Anthropic:** there is no native public STT/TTS API. Use STT first, then chat. The constant `ANTHROPIC_NO_NATIVE_AUDIO` documents this limitation.
@@ -399,7 +405,7 @@ const getWeather = tools.createTool({
 });
 
 await ai.call({
-  aiModel: "gpt-4o",
+  aiModel: "gpt-5.4",
   messages: [AIMessages.human("Weather in Paris?")],
   agent: { tools: [getWeather] },
 });
@@ -418,13 +424,13 @@ const ai = new AI({
 });
 
 await ai.call({
-  aiModel: "gpt-4o",
+  aiModel: "gpt-5.4",
   threadId: "session-42",
   messages: [AIMessages.human("My name is Ana.")],
 });
 
 await ai.call({
-  aiModel: "gpt-4o",
+  aiModel: "gpt-5.4",
   threadId: "session-42",
   messages: [AIMessages.human("What is my name?")],
 });
@@ -570,7 +576,7 @@ Multimodal transcription without `@google/genai` (uses LangChain + your Gemini t
 const transcript = await AIAudio.transcribeWithGeminiPrompt(
   buffer,
   {
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     prompt: "Transcribe with approximate [mm:ss] timestamps.",
     googleGeminiToken: process.env.GOOGLE_GEMINI_TOKEN,
   },
@@ -651,7 +657,7 @@ const vectors = await AIEmbeddings.embedDocuments(
 );
 ```
 
-Models: `gemini-embedding-001`, `gemini-embedding-2-preview` (text via this API; multimodal inputs require the Google GenAI SDK directly).
+Models: `gemini-embedding-001`, `gemini-embedding-2`, `gemini-embedding-2-preview` (text via this API; multimodal inputs require the Google GenAI SDK directly).
 
 For `gemini-embedding-001`, when `dimensions` is set below the native 3072 (e.g. `768`), the library truncates the vector and applies **L2 normalization** so cosine similarity remains meaningful.
 
@@ -724,7 +730,7 @@ For full control over the LangGraph agent:
 
 ```typescript
 const { agent } = await ai.getRawAgent({
-  aiModel: "gpt-4o",
+  aiModel: "gpt-5.4",
   messages: [],
   threadId: "t-1",
 });
@@ -747,7 +753,21 @@ These aliases remain for backward compatibility and will be removed in **v2.0.0*
 | `LangchainModels` | `AIModels` |
 | `LangchainMessages` | `AIMessages` |
 | `LangchainTools` | `AITools` |
-| `AIAudioTranscription` | `AIAudio` |
+| `LangchainCallParams` | `AICallParams` |
+| `LangchainCallReturn` | `AICallReturn` |
+| `LangchainCallStructuredOutputParams` | `AICallStructuredOutputParams` |
+| `LangchainCallStructuredOutputReturn` | `AICallStructuredOutputReturn` |
+| `AIAudioTranscription` / `LangchainAudioTranscription` | `AIAudio` |
+| `WhisperTranscriptionOptions` | `OpenAITranscriptionOptions` |
+
+The `AIAudio` facade also keeps redundant method aliases, all deprecated for **v2.0.0**:
+
+| Deprecated | Use instead |
+|------------|-------------|
+| `AIAudio.speak` | `AIAudio.speakOpenAI` |
+| `AIAudio.speakViaOpenRouter` | `AIAudio.speakOpenRouter` |
+| `AIAudio.transcribeDetailedOpenRouter` | `AIAudio.transcribeOpenRouter` |
+| `AIAudio.transcribeWithWhisperLegacy` | `AIAudio.transcribeWithWhisper` |
 
 ---
 

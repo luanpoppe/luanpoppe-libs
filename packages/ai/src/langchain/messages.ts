@@ -203,11 +203,9 @@ export class AIMessages {
       );
 
     try {
-      // Prepara opções de transcrição - só inclui language se não houver mimeType
-      // Com exactOptionalPropertyTypes: true, não podemos passar undefined explicitamente
-      const transcriptionOptions = mimeType
-        ? { format: mimeType }
-        : { language: "pt" };
+      // Só passa `format` quando o mimeType foi informado; sem ele, não força
+      // idioma — deixa o Whisper detectar (biblioteca não assume locale).
+      const transcriptionOptions = mimeType ? { format: mimeType } : {};
 
       const transcribedText = await AIAudio.transcribeWithWhisper(
         audioBuffer,
@@ -253,7 +251,6 @@ export class AIMessages {
       {
         model: openRouterTranscriptionModel,
         format,
-        ...(text ? {} : { language: "pt" }),
       },
       openRouterApiKey,
     );

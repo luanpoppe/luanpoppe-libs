@@ -185,7 +185,7 @@ describe("AIMessages", () => {
     });
 
     it("provider openai usa STT prévio via AIAudio", async () => {
-      const { AIAudio } = await import("../../../src/audio");
+      const { AIAudio } = await import("../../../src/audio/index.js");
       const audioBuffer = Buffer.from("fake audio data");
 
       const result = await AIMessages.humanAudio({
@@ -199,7 +199,7 @@ describe("AIMessages", () => {
     });
 
     it("provider openrouter usa transcribeOpenRouter", async () => {
-      const { AIAudio } = await import("../../../src/audio");
+      const { AIAudio } = await import("../../../src/audio/index.js");
       const audioBuffer = Buffer.from("fake audio data");
 
       const result = await AIMessages.humanAudio({

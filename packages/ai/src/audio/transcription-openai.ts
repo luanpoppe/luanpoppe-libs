@@ -16,6 +16,7 @@ function createOpenAIClient(apiKey?: string): OpenAI {
   if (apiKey) {
     return new OpenAI({ apiKey });
   }
+  // Sem chave explícita, deixa o SDK resolver via `OPENAI_API_KEY` (fallback de env).
   return new OpenAI();
 }
 
@@ -41,12 +42,24 @@ function validateTranscriptionOptions(options: OpenAITranscriptionOptions): void
       "[@luanpoppe/ai] timestampGranularities só é suportado com model whisper-1 e responseFormat verbose_json.",
     );
   }
+}
 
-  if (model === "gpt-4o-transcribe-diarize" && format === "diarized_json") {
-    if (!options.chunkingStrategy) {
-      options.chunkingStrategy = "auto";
-    }
+/**
+ * Resolve o `chunking_strategy` sem mutar as opções do chamador.
+ * É obrigatório para `gpt-4o-transcribe-diarize` com `diarized_json` em áudio > 30s.
+ */
+function resolveChunkingStrategy(
+  options: OpenAITranscriptionOptions,
+  model: string,
+  responseFormat: OpenAITranscriptionOptions["responseFormat"],
+): OpenAITranscriptionOptions["chunkingStrategy"] {
+  if (options.chunkingStrategy) {
+    return options.chunkingStrategy;
   }
+  if (model === "gpt-4o-transcribe-diarize" && responseFormat === "diarized_json") {
+    return "auto";
+  }
+  return undefined;
 }
 
 function mapVerboseResponse(
@@ -141,10 +154,15 @@ export async function transcribeDetailedOpenAI(
   if (options.timestampGranularities) {
     params.timestamp_granularities = options.timestampGranularities;
   }
-  if (options.chunkingStrategy) {
+  const chunkingStrategy = resolveChunkingStrategy(
+    options,
+    model,
+    responseFormat,
+  );
+  if (chunkingStrategy) {
     (params as OpenAI.Audio.TranscriptionCreateParams & {
       chunking_strategy?: unknown;
-    }).chunking_strategy = options.chunkingStrategy;
+    }).chunking_strategy = chunkingStrategy;
   }
 
   const response = await openai.audio.transcriptions.create(params);

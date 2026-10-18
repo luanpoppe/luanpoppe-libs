@@ -89,7 +89,7 @@ describe("transcription-openai", () => {
     const result = await transcribeDiarizedOpenAI(Buffer.from("audio"), {}, "sk-test");
 
     expect(result.speakers).toHaveLength(2);
-    expect(result.speakers?.[0].speaker).toBe("A");
+    expect(result.speakers?.[0]!.speaker).toBe("A");
     expect(mockTranscriptionsCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         model: "gpt-4o-transcribe-diarize",

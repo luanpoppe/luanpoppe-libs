@@ -1,11 +1,56 @@
 {
   "name": "@luanpoppe/ai",
-  "version": "1.1.6",
+  "version": "1.2.0",
   "description": "TypeScript SDK for LLM chat, structured output, memory, audio STT/TTS, and embeddings via OpenAI, Gemini, OpenRouter, and local models (Ollama/LM Studio).",
-  "main": "dist/index.js",
+  "license": "ISC",
+  "author": "Luan Poppe",
+  "keywords": [
+    "ai",
+    "llm",
+    "openai",
+    "gemini",
+    "openrouter",
+    "langchain",
+    "langgraph",
+    "embeddings",
+    "stt",
+    "tts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luanpoppe/luanpoppe-libs.git",
+    "directory": "packages/ai"
+  },
+  "homepage": "https://github.com/luanpoppe/luanpoppe-libs/tree/main/packages/ai#readme",
+  "bugs": {
+    "url": "https://github.com/luanpoppe/luanpoppe-libs/issues"
+  },
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "build": "tsc",
-    "pub": "pnpm build && pnpm publish --access=public",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "pnpm clean && tsc",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tests/tsconfig.json",
+    "pub": "pnpm publish --access=public",
+    "prepublishOnly": "pnpm typecheck && pnpm test:unit && pnpm build",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
@@ -13,10 +58,7 @@
     "test:e2e": "vitest run tests/e2e",
     "test:unit": "vitest run tests/unit"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.20.0",
+  "packageManager": "pnpm@10.26.2",
   "dependencies": {
     "@langchain/ollama": "^1.2.6",
     "@langchain/langgraph": "^1.1.1",

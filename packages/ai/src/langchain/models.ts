@@ -97,8 +97,8 @@ export class AIModels {
       apiKey,
     };
 
-    if (maxTokens) options.maxTokens = maxTokens;
-    if (temperature) options.temperature = temperature;
+    if (maxTokens !== undefined) options.maxTokens = maxTokens;
+    if (temperature !== undefined) options.temperature = temperature;
     if (reasoningEffort) {
       options.modelKwargs = {
         ...(options.modelKwargs ?? {}),
@@ -122,8 +122,8 @@ export class AIModels {
       apiKey,
     };
 
-    if (maxTokens) options.maxOutputTokens = maxTokens;
-    if (temperature) options.temperature = temperature;
+    if (maxTokens !== undefined) options.maxOutputTokens = maxTokens;
+    if (temperature !== undefined) options.temperature = temperature;
 
     return new ChatGoogleGenerativeAI(options);
   }
@@ -153,8 +153,8 @@ export class AIModels {
       },
     };
 
-    if (maxTokens) options.maxTokens = maxTokens;
-    if (temperature) options.temperature = temperature;
+    if (maxTokens !== undefined) options.maxTokens = maxTokens;
+    if (temperature !== undefined) options.temperature = temperature;
 
     const provider = resolveOpenRouterProvider(model, {
       openRouterProvider,
@@ -207,7 +207,7 @@ export class AIModels {
       },
     };
 
-    if (maxTokens) options.maxTokens = maxTokens;
+    if (maxTokens !== undefined) options.maxTokens = maxTokens;
     if (temperature !== undefined) options.temperature = temperature;
 
     return new ChatOpenAI(options);

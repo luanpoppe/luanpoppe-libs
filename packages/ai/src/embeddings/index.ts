@@ -1,4 +1,3 @@
-import type { AIEmbeddingModelNames } from "../@types/embedding-model-names";
 import { embedOpenAI } from "./embed-openai";
 import { embedOpenRouter } from "./embed-openrouter";
 import { embedGemini } from "./embed-gemini";
@@ -6,14 +5,7 @@ import {
   embedWithModel,
   type EmbedOptions,
 } from "./route";
-import type {
-  EmbedApiKeys,
-  EmbeddingResult,
-  GeminiEmbeddingOptions,
-  GeminiEmbeddingTaskType,
-  OpenAIEmbeddingOptions,
-  OpenRouterEmbeddingOptions,
-} from "./types";
+import type { EmbedApiKeys, EmbeddingResult } from "./types";
 
 export type {
   AIEmbeddingModelNames,

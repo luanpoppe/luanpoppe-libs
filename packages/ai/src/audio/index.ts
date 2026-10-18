@@ -1,6 +1,5 @@
 import type { AudioBuffer } from "../@types/audio";
 import type {
-  GeminiTranscriptionOptions,
   OpenAITranscriptionDetailed,
   OpenAITranscriptionOptions,
   OpenRouterSpeechOptions,
@@ -33,6 +32,7 @@ export type {
   OpenRouterTranscriptionResult,
   OpenAISpeechOptions,
   OpenAISpeechModel,
+  OpenAISpeechResponseFormat,
   OpenRouterSpeechOptions,
   SpeechResult,
   TranscriptionWord,
@@ -58,7 +58,7 @@ export class AIAudio {
   static speakOpenRouterStream = speakOpenRouterStream;
   static transcribeWithGeminiPrompt = transcribeWithGeminiPrompt;
 
-  /** @deprecated Use AIAudio.transcribeWithWhisper */
+  /** @deprecated Use AIAudio.transcribeWithWhisper instead. Will be removed in 2.0.0 */
   static transcribeWithWhisperLegacy(
     audioBuffer: AudioBuffer,
     options?: OpenAITranscriptionOptions,
@@ -75,6 +75,7 @@ export class AIAudio {
     return transcribeFileDetailedOpenAI(filePath, options, openAIApiKey);
   }
 
+  /** @deprecated Use AIAudio.transcribeOpenRouter instead. Will be removed in 2.0.0 */
   static async transcribeDetailedOpenRouter(
     audioBuffer: AudioBuffer,
     options: OpenRouterTranscriptionOptions,
@@ -83,6 +84,7 @@ export class AIAudio {
     return transcribeOpenRouter(audioBuffer, options, openRouterApiKey);
   }
 
+  /** @deprecated Use AIAudio.speakOpenAI instead. Will be removed in 2.0.0 */
   static async speak(
     text: string,
     options: OpenAISpeechOptions & { provider?: "openai" },
@@ -91,6 +93,7 @@ export class AIAudio {
     return speakOpenAI(text, options, openAIApiKey);
   }
 
+  /** @deprecated Use AIAudio.speakOpenRouter instead. Will be removed in 2.0.0 */
   static async speakViaOpenRouter(
     text: string,
     options: OpenRouterSpeechOptions,

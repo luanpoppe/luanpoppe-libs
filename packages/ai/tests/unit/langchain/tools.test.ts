@@ -17,17 +17,16 @@ describe("AITools", () => {
 
   describe("createTool", () => {
     it("deve criar uma ferramenta com todos os parâmetros fornecidos", () => {
-      const toolFunction = async (input: { query: string }) => {
+      const schema = z.object({ query: z.string() });
+      const toolFunction = async (input: z.infer<typeof schema>) => {
         return `Resultado para: ${input.query}`;
       };
 
-      const params: CreateToolParams = {
+      const params: CreateToolParams<typeof schema> = {
         toolFunction,
         name: "search_tool",
         description: "Uma ferramenta de busca",
-        schema: z.object({
-          query: z.string(),
-        }),
+        schema,
       };
 
       const mockTool = {} as any;
@@ -44,23 +43,20 @@ describe("AITools", () => {
     });
 
     it("deve criar uma ferramenta com schema complexo", () => {
-      const toolFunction = async (input: {
-        name: string;
-        age: number;
-        email: string;
-      }) => {
+      const schema = z.object({
+        name: z.string(),
+        age: z.number(),
+        email: z.string().email(),
+      });
+      const toolFunction = async (input: z.infer<typeof schema>) => {
         return `Usuário: ${input.name}, ${input.age} anos, ${input.email}`;
       };
 
-      const params: CreateToolParams = {
+      const params: CreateToolParams<typeof schema> = {
         toolFunction,
         name: "user_tool",
         description: "Ferramenta para processar usuários",
-        schema: z.object({
-          name: z.string(),
-          age: z.number(),
-          email: z.string().email(),
-        }),
+        schema,
       };
 
       const mockTool = {} as any;
@@ -77,15 +73,16 @@ describe("AITools", () => {
     });
 
     it("deve criar uma ferramenta com schema simples", () => {
+      const schema = z.object({});
       const toolFunction = async () => {
         return "Resultado simples";
       };
 
-      const params: CreateToolParams = {
+      const params: CreateToolParams<typeof schema> = {
         toolFunction,
         name: "simple_tool",
         description: "Ferramenta simples",
-        schema: z.object({}),
+        schema,
       };
 
       const mockTool = {} as any;
@@ -102,22 +99,26 @@ describe("AITools", () => {
     });
 
     it("deve criar múltiplas ferramentas independentes", () => {
-      const toolFunction1 = async (input: { x: number }) => input.x * 2;
-      const toolFunction2 = async (input: { y: string }) =>
+      const schema1 = z.object({ x: z.number() });
+      const schema2 = z.object({ y: z.string() });
+
+      const toolFunction1 = async (input: z.infer<typeof schema1>) =>
+        input.x * 2;
+      const toolFunction2 = async (input: z.infer<typeof schema2>) =>
         input.y.toUpperCase();
 
-      const params1: CreateToolParams = {
+      const params1: CreateToolParams<typeof schema1> = {
         toolFunction: toolFunction1,
         name: "multiply",
         description: "Multiplica por 2",
-        schema: z.object({ x: z.number() }),
+        schema: schema1,
       };
 
-      const params2: CreateToolParams = {
+      const params2: CreateToolParams<typeof schema2> = {
         toolFunction: toolFunction2,
         name: "uppercase",
         description: "Converte para maiúsculas",
-        schema: z.object({ y: z.string() }),
+        schema: schema2,
       };
 
       const mockTool1 = {} as any;
