@@ -3,6 +3,23 @@
 Todas as mudanças relevantes deste pacote. Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/)
 e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.2.1] - 2026-10-22
+
+### Corrigido
+- Structured output com DeepSeek via OpenRouter quando o reasoning estava ativo:
+  o modelo podia devolver texto extra/múltiplos JSONs e o parse falhava. Agora a
+  segunda tentativa usa `reasoning: { effort: "none" }` e reforça a instrução de
+  retornar um único objeto JSON.
+- `parseJsonFromAssistantMessages` extrai o primeiro objeto/array JSON balanceado,
+  ignorando texto antes/depois e múltiplos objetos.
+
+### Adicionado
+- `reasoningEffort` também é aceito para `openrouter/deepseek/*` e enviado como
+  `reasoning: { effort }` no OpenRouter. O tipo `ReasoningEffort` agora inclui
+  `"none"`, `"minimal"`, `"xhigh"` e `"max"`.
+- Opção `openRouterResponseHealing` para habilitar o plugin `response-healing` do
+  OpenRouter. `callStructuredOutput` habilita automaticamente para DeepSeek.
+
 ## [1.2.0] - 2026-10-18
 
 Revisão ampla do pacote: empacotamento, exportação de tipos, correções de bugs,

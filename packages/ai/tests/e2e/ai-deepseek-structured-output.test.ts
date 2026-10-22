@@ -43,6 +43,34 @@ describe("AI E2E - DeepSeek Structured Output", () => {
   );
 
   it(
+    "deve retornar structured output com reasoning low no deepseek-v4.1-flash",
+    { timeout },
+    async () => {
+      if (!requireOpenRouter()) return;
+
+      const ai = new AI({ openRouterApiKey: openRouterApiKey! });
+      const outputSchema = z.object({
+        sum: z.number(),
+        product: z.number(),
+      });
+
+      const result = await ai.callStructuredOutput({
+        aiModel: "openrouter/deepseek/deepseek-v4.1-flash-1017",
+        messages: [
+          AIMessages.human(
+            "Calcule a soma e o produto de 7 e 4. Responda em json.",
+          ),
+        ],
+        outputSchema,
+        modelConfig: { reasoningEffort: "low" },
+      });
+
+      expect(result.response.sum).toBe(11);
+      expect(result.response.product).toBe(28);
+    },
+  );
+
+  it(
     "deve extrair nome e idade com deepseek-v4-pro",
     { timeout },
     async () => {

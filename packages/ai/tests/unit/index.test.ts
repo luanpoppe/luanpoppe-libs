@@ -885,6 +885,51 @@ describe("AI", () => {
       expect(result.response).toEqual({ sum: 11, product: 28 });
     });
 
+    it("deve repetir structured output com reasoning none quando o schema falhar", async () => {
+      const mockModel = {} as any;
+      const mockMessages = [AIMessages.human("Teste")];
+      const outputSchema = z.object({ sum: z.number() });
+
+      vi.mocked(AIModels.openrouter).mockReturnValue(mockModel);
+
+      let invokeCount = 0;
+      vi.mocked(createAgent).mockImplementation(() => {
+        invokeCount += 1;
+        const currentAttempt = invokeCount;
+        return {
+          invoke: vi.fn().mockImplementation(() =>
+            currentAttempt === 1
+              ? Promise.resolve({
+                  messages: [{ content: '{"sum":"oops"}' }],
+                })
+              : Promise.resolve({
+                  messages: [{ content: '{"sum":11}' }],
+                }),
+          ),
+        } as any;
+      });
+
+      const aiWithOpenRouter = new AI({
+        openRouterApiKey: "test-openrouter-key",
+      });
+
+      const result = await aiWithOpenRouter.callStructuredOutput({
+        aiModel: "openrouter/deepseek/deepseek-v4-flash",
+        messages: mockMessages,
+        outputSchema,
+      });
+
+      expect(result.response).toEqual({ sum: 11 });
+      expect(createAgent).toHaveBeenCalledTimes(2);
+      const retryModelConfig = vi.mocked(AIModels.openrouter).mock.calls[1]?.[0];
+      expect(retryModelConfig).toEqual(
+        expect.objectContaining({
+          reasoningEffort: "none",
+          openRouterResponseHealing: true,
+        }),
+      );
+    });
+
     it("deve validar o schema e lançar erro se inválido", async () => {
       const mockModel = {} as any;
       const mockMessages = [AIMessages.human("Teste")];

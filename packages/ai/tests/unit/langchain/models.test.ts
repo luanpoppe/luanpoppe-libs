@@ -347,7 +347,7 @@ describe("AIModels", () => {
       );
     });
 
-    it("deve mesclar provider com reasoningEffort", () => {
+    it("deve mesclar provider com reasoningEffort usando o parametro reasoning do OpenRouter", () => {
       AIModels.openrouter({
         model: "deepseek/deepseek-r1",
         apiKey: "test-openrouter-key",
@@ -358,8 +358,44 @@ describe("AIModels", () => {
       expect(ChatOpenAI).toHaveBeenCalledWith(
         expect.objectContaining({
           modelKwargs: {
-            reasoning_effort: "high",
+            reasoning: { effort: "high" },
             provider: { only: ["deepseek"] },
+          },
+        }),
+      );
+    });
+
+    it("deve aceitar reasoningEffort none para desativar reasoning no OpenRouter", () => {
+      AIModels.openrouter({
+        model: "deepseek/deepseek-v4.1-flash-1017",
+        apiKey: "test-openrouter-key",
+        reasoningEffort: "none",
+      });
+
+      expect(ChatOpenAI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          modelKwargs: {
+            reasoning: { effort: "none" },
+            provider: { only: ["deepseek"] },
+          },
+        }),
+      );
+    });
+
+    it("deve enviar o plugin response-healing quando solicitado", () => {
+      AIModels.openrouter({
+        model: "deepseek/deepseek-v4.1-flash-1017",
+        apiKey: "test-openrouter-key",
+        openRouterResponseHealing: true,
+        openRouterForceJsonObject: true,
+      });
+
+      expect(ChatOpenAI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          modelKwargs: {
+            provider: { only: ["deepseek"] },
+            response_format: { type: "json_object" },
+            plugins: [{ id: "response-healing" }],
           },
         }),
       );

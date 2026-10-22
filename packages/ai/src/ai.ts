@@ -40,6 +40,14 @@ const DEFAULT_MAX_RETRIES = 3;
 const RETRY_BACKOFF_FACTOR = 2.0;
 /** Atraso inicial (ms) antes do primeiro retry. */
 const RETRY_INITIAL_DELAY_MS = 1000;
+/**
+ * Tentativas de structured output. A segunda tentativa usa `reasoning: "none"`
+ * porque modelos de reasoning (ex.: DeepSeek) às vezes emitem texto extra
+ * junto do JSON, quebrando o parse.
+ */
+const DEFAULT_STRUCTURED_OUTPUT_ATTEMPTS = 2;
+const STRUCTURED_OUTPUT_RETRY_INSTRUCTION =
+  "IMPORTANTE: Retorne APENAS um único objeto JSON válido, sem markdown, sem texto antes ou depois e sem múltiplos objetos JSON.";
 
 /** Opções aceitas pelo construtor de `AI`. Exportado para o consumidor tipar a config. */
 export type AIConstructor = {
@@ -177,8 +185,6 @@ export class AI {
   async callStructuredOutput<T extends z.ZodSchema>(
     params: AICallStructuredOutputParams<T>,
   ): AICallStructuredOutputReturn<typeof params.outputSchema> {
-    const { outputSchema, messages } = params;
-
     this.ensureThreadIdWhenCheckpointer(params);
     const checkpointer = await this.getCheckpointer();
 
@@ -187,44 +193,133 @@ export class AI {
         ? { configurable: { thread_id: params.threadId } }
         : undefined;
 
-    const { result: response, agent } = await this.invokeWithRetryAndFallback(
-      params,
-      (paramsForModel) => {
-        const useJsonObject = isDeepSeekJsonObjectOnlyModel(
-          paramsForModel.aiModel,
+    let lastError: unknown;
+
+    for (
+      let attempt = 1;
+      attempt <= DEFAULT_STRUCTURED_OUTPUT_ATTEMPTS;
+      attempt += 1
+    ) {
+      const attemptParams =
+        attempt === 1
+          ? params
+          : this.buildStructuredOutputRetryParams(params);
+
+      try {
+        const { result: response, agent } =
+          await this.invokeWithRetryAndFallback(
+            attemptParams,
+            (paramsForModel) => {
+              const useJsonObject = isDeepSeekJsonObjectOnlyModel(
+                paramsForModel.aiModel,
+              );
+              const agentParams = useJsonObject
+                ? this.withDeepSeekJsonObjectParams(
+                    paramsForModel,
+                    params.outputSchema,
+                  )
+                : paramsForModel;
+
+              return createAgent({
+                ...this.standardAgent(agentParams, checkpointer),
+                ...(useJsonObject
+                  ? { responseFormat: undefined as any }
+                  : {
+                      responseFormat: this.normalizeSchemaForOpenAI(
+                        params.outputSchema,
+                        paramsForModel.aiModel,
+                      ) as any,
+                    }),
+              });
+            },
+            (agent) =>
+              agent.invoke({ messages: attemptParams.messages }, invokeConfig as any),
+          );
+
+        this._memory?.setAgent(agent);
+
+        const rawResponse =
+          response?.structuredResponse != null
+            ? response.structuredResponse
+            : parseJsonFromAssistantMessages(response.messages);
+
+        const validationSchema = this.buildValidationSchema(
+          params.outputSchema,
         );
-        const agentParams = useJsonObject
-          ? this.withDeepSeekJsonObjectParams(paramsForModel, outputSchema)
-          : paramsForModel;
+        const parsedResponse = validationSchema.parse(rawResponse) as z.infer<
+          typeof params.outputSchema
+        >;
 
-        return createAgent({
-          ...this.standardAgent(agentParams, checkpointer),
-          ...(useJsonObject
-            ? { responseFormat: undefined as any }
-            : {
-                responseFormat: this.normalizeSchemaForOpenAI(
-                  outputSchema,
-                  paramsForModel.aiModel,
-                ) as any,
-              }),
-        });
-      },
-      (agent) => agent.invoke({ messages }, invokeConfig as any),
+        return { response: parsedResponse };
+      } catch (error) {
+        lastError = error;
+        const isLastAttempt =
+          attempt >= DEFAULT_STRUCTURED_OUTPUT_ATTEMPTS;
+        const shouldRetry =
+          !isLastAttempt && this.isStructuredOutputFormatError(error);
+
+        if (!shouldRetry) {
+          throw error;
+        }
+
+        console.warn(
+          `[@luanpoppe/ai] Resposta estruturada inválida para "${params.aiModel}"; repetindo com reasoning "none".`,
+        );
+      }
+    }
+
+    throw lastError;
+  }
+
+  /**
+   * Segunda tentativa de structured output: desativa reasoning (quando
+   * suportado) e reforça a instrução para retornar somente um objeto JSON.
+   */
+  private buildStructuredOutputRetryParams<T extends AICallParams>(
+    params: T,
+  ): T {
+    const baseSystemPrompt = params.systemPrompt?.trim() ?? "";
+    const systemPrompt = baseSystemPrompt
+      ? `${baseSystemPrompt}\n${STRUCTURED_OUTPUT_RETRY_INSTRUCTION}`
+      : STRUCTURED_OUTPUT_RETRY_INSTRUCTION;
+
+    const modelConfig: NonNullable<AICallParams["modelConfig"]> = {
+      ...params.modelConfig,
+    };
+
+    if (params.aiModel.startsWith("openrouter/")) {
+      modelConfig.reasoningEffort = "none";
+      modelConfig.openRouterResponseHealing = true;
+    }
+
+    return {
+      ...params,
+      systemPrompt,
+      modelConfig,
+    };
+  }
+
+  private isStructuredOutputFormatError(error: unknown): boolean {
+    if (error instanceof z.ZodError) {
+      return true;
+    }
+
+    if (!(error instanceof Error)) {
+      return false;
+    }
+
+    const message = error.message.toLowerCase();
+    const formatErrorFragments = [
+      "json",
+      "parse",
+      "unexpected token",
+      "unexpected non-whitespace",
+      "structured",
+    ];
+
+    return formatErrorFragments.some((fragment) =>
+      message.includes(fragment),
     );
-
-    this._memory?.setAgent(agent);
-
-    const rawResponse =
-      response?.structuredResponse != null
-        ? response.structuredResponse
-        : parseJsonFromAssistantMessages(response.messages);
-
-    const validationSchema = this.buildValidationSchema(outputSchema);
-    const parsedResponse = validationSchema.parse(rawResponse) as z.infer<
-      typeof outputSchema
-    >;
-
-    return { response: parsedResponse };
   }
 
   /**
@@ -269,6 +364,7 @@ export class AI {
       modelConfig: {
         ...params.modelConfig,
         openRouterForceJsonObject: true,
+        openRouterResponseHealing: true,
       },
     };
   }
@@ -336,11 +432,12 @@ export class AI {
 
     const supportsReasoning =
       aiModel.startsWith("gpt") ||
-      aiModel.startsWith("openrouter/openai/");
+      aiModel.startsWith("openrouter/openai/") ||
+      aiModel.startsWith("openrouter/deepseek/");
 
     if (modelConfig?.reasoningEffort && !supportsReasoning) {
       console.warn(
-        `[@luanpoppe/ai] O modelo "${aiModel}" não suporta reasoningEffort. O parâmetro será ignorado. Use modelos OpenAI (gpt*) ou OpenRouter com OpenAI (openrouter/openai/*).`,
+        `[@luanpoppe/ai] O modelo "${aiModel}" não suporta reasoningEffort. O parâmetro será ignorado. Use modelos OpenAI (gpt*), OpenRouter OpenAI (openrouter/openai/*) ou OpenRouter DeepSeek (openrouter/deepseek/*).`,
       );
     }
 
@@ -372,6 +469,7 @@ export class AI {
         openRouterProvider: modelConfig?.openRouterProvider,
         openRouterAllowAllProviders: modelConfig?.openRouterAllowAllProviders,
         openRouterForceJsonObject: modelConfig?.openRouterForceJsonObject,
+        openRouterResponseHealing: modelConfig?.openRouterResponseHealing,
       });
     }
 

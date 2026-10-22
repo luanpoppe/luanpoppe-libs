@@ -16,8 +16,15 @@ export type {
   OpenRouterProviderSort,
 } from "../@types/openrouter-provider";
 
-/** Nível de esforço de raciocínio para modelos OpenAI (o1, gpt-5, etc.). Valores: "low" | "medium" | "high" */
-export type ReasoningEffort = "low" | "medium" | "high";
+/** Nível de esforço de raciocínio. No OpenRouter é enviado como `reasoning.effort`. */
+export type ReasoningEffort =
+  | "none"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max";
 
 export type OllamaModelConfig = {
   model: string;
@@ -44,7 +51,7 @@ export type LLMModelConfig = {
   temperature?: number | undefined;
   /** Tamanho do contexto (Ollama nativo, `num_ctx`) */
   numCtx?: number | undefined;
-  /** Nível de esforço de raciocínio (modelos OpenAI: o1, gpt-5, etc.) */
+  /** Nível de esforço de raciocínio (OpenAI usa `reasoning_effort`; OpenRouter usa `reasoning.effort`) */
   reasoningEffort?: ReasoningEffort | undefined;
   /** Preferências de roteamento de providers do OpenRouter */
   openRouterProvider?: OpenRouterProviderPreferences | undefined;
@@ -58,6 +65,11 @@ export type LLMModelConfig = {
    * Uso interno via `callStructuredOutput`.
    */
   openRouterForceJsonObject?: boolean | undefined;
+  /**
+   * Ativa o plugin `response-healing` do OpenRouter, que tenta reparar JSON
+   * malformado antes de devolver a resposta.
+   */
+  openRouterResponseHealing?: boolean | undefined;
 };
 
 const DEEPSEEK_OPENROUTER_PROVIDER: OpenRouterProviderPreferences = {
@@ -138,6 +150,7 @@ export class AIModels {
       openRouterProvider,
       openRouterAllowAllProviders,
       openRouterForceJsonObject,
+      openRouterResponseHealing,
     } = params;
 
     if (!apiKey)
@@ -161,13 +174,24 @@ export class AIModels {
       openRouterAllowAllProviders,
     });
 
-    if (reasoningEffort || provider || openRouterForceJsonObject) {
+    if (
+      reasoningEffort ||
+      provider ||
+      openRouterForceJsonObject ||
+      openRouterResponseHealing
+    ) {
       options.modelKwargs = {
         ...(options.modelKwargs ?? {}),
-        ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
+        // OpenRouter aceita o parâmetro unificado `reasoning.effort` para
+        // modelos de reasoning (DeepSeek, OpenAI, etc.). `effort: "none"`
+        // desativa o reasoning.
+        ...(reasoningEffort ? { reasoning: { effort: reasoningEffort } } : {}),
         ...(provider ? { provider } : {}),
         ...(openRouterForceJsonObject
           ? { response_format: { type: "json_object" } }
+          : {}),
+        ...(openRouterResponseHealing
+          ? { plugins: [{ id: "response-healing" }] }
           : {}),
       };
     }

@@ -43,6 +43,56 @@ function contentToString(content: unknown): string {
   return "";
 }
 
+/** Extrai o primeiro valor JSON completo (objeto ou array) de um texto. */
+function extractFirstJsonValue(text: string): string | null {
+  const startIndex = text.search(/[{\[]/);
+  if (startIndex < 0) return null;
+
+  const openingChar = text[startIndex];
+  const closingChar = openingChar === "{" ? "}" : "]";
+  let depth = 0;
+  let isInsideString = false;
+  let isEscaped = false;
+
+  for (let index = startIndex; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (isInsideString) {
+      if (isEscaped) {
+        isEscaped = false;
+        continue;
+      }
+      if (char === "\\") {
+        isEscaped = true;
+        continue;
+      }
+      if (char === '"') {
+        isInsideString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      isInsideString = true;
+      continue;
+    }
+
+    if (char === openingChar) {
+      depth += 1;
+      continue;
+    }
+
+    if (char === closingChar) {
+      depth -= 1;
+      if (depth === 0) {
+        return text.slice(startIndex, index + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
 /** Extrai e faz parse de JSON na última mensagem do assistente (suporta fences ```json). */
 export function parseJsonFromAssistantMessages(
   messages: BaseMessage[],
@@ -65,11 +115,11 @@ export function parseJsonFromAssistantMessages(
   try {
     return JSON.parse(jsonText);
   } catch {
-    const start = jsonText.indexOf("{");
-    const end = jsonText.lastIndexOf("}");
-    if (start >= 0 && end > start) {
-      return JSON.parse(jsonText.slice(start, end + 1));
+    const extractedJson = extractFirstJsonValue(jsonText);
+    if (extractedJson !== null) {
+      return JSON.parse(extractedJson);
     }
+
     throw new Error(
       "[@luanpoppe/ai] Não foi possível fazer parse do JSON retornado pelo modelo.",
     );
