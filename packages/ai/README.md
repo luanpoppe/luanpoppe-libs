@@ -134,7 +134,7 @@ const { text, messages } = await ai.call({
 | `aiModel` | Model id — see [Model names](#model-names) |
 | `messages` | `SystemMessage`, `HumanMessage`, or `AIMessage` (from `AIMessages` or LangChain) |
 | `systemPrompt` | Optional system instructions |
-| `modelConfig` | `maxTokens`, `temperature`, `reasoningEffort` (OpenAI), `baseUrl`, `numCtx` (Ollama), OpenRouter provider options |
+| `modelConfig` | `maxTokens`, `temperature`, `reasoningEffort` (OpenAI and OpenRouter/DeepSeek), `baseUrl`, `numCtx` (Ollama), OpenRouter provider options |
 | `maxRetries` | Retries per model via LangChain `modelRetryMiddleware` (default: 3) |
 | `aiModelsFallback` | Try these models if the primary fails after retries |
 | `threadId` | Conversation id when using memory/checkpointer |
@@ -173,17 +173,21 @@ Uses LangChain `responseFormat` with JSON schema. Optional fields (`.optional()`
 
 DeepSeek models do **not** support `json_schema`. The library automatically:
 
-1. Sets `response_format: { type: "json_object" }` on OpenRouter
+1. Sets `response_format: { type: "json_object" }` and `plugins: [{ id: "response-healing" }]` on OpenRouter
 2. Merges the Zod schema into the system prompt
 3. Parses JSON from the assistant message if `structuredResponse` is missing
+4. Retries once with `reasoning: { effort: "none" }` if the reply is not valid JSON or fails the schema
 
 ```typescript
 await ai.callStructuredOutput({
-  aiModel: "openrouter/deepseek/deepseek-v4-flash",
+  aiModel: "openrouter/deepseek/deepseek-v4.1-flash-1017",
   outputSchema: schema,
   messages: [AIMessages.human("Return JSON only.")],
+  modelConfig: { reasoningEffort: "low" },
 });
 ```
+
+On OpenRouter, `reasoningEffort` is sent as `reasoning: { effort }` (including `"none"` to disable reasoning). This avoids the malformed structured output that DeepSeek produces when reasoning is enabled without that parameter.
 
 ### Local models (`ollama/*`, `local/*`)
 
@@ -319,6 +323,24 @@ await ai.call({
 **Default behavior:** for models whose slug starts with `deepseek/`, the library applies `provider: { only: ["deepseek"] }` unless you pass `openRouterProvider` or `openRouterAllowAllProviders: true`.
 
 `resolveOpenRouterProvider(model, config)` is exported if you build custom OpenRouter requests.
+
+### Reasoning on OpenRouter
+
+For `openrouter/deepseek/*` (and `openrouter/openai/*`), pass `reasoningEffort` in `modelConfig`:
+
+```typescript
+await ai.call({
+  aiModel: "openrouter/deepseek/deepseek-v4.1-flash-1017",
+  messages: [...],
+  modelConfig: { reasoningEffort: "low" }, // "none" disables reasoning
+});
+```
+
+The library sends it as OpenRouter's unified `reasoning: { effort }` parameter. Structured output automatically retries with `"none"` when the first reply is not valid JSON.
+
+### Response healing
+
+Set `openRouterResponseHealing: true` to enable OpenRouter's `response-healing` plugin, which attempts to repair malformed JSON before returning it. `callStructuredOutput` already enables it for DeepSeek.
 
 ---
 

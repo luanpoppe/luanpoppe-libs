@@ -45,5 +45,28 @@ describe("structured-output", () => {
       ]);
       expect(result).toEqual({ b: 2 });
     });
+
+    it("deve ignorar texto depois do JSON", () => {
+      const result = parseJsonFromAssistantMessages([
+        { content: '{"sum":11}\nEspero que ajude!' } as any,
+      ]);
+      expect(result).toEqual({ sum: 11 });
+    });
+
+    it("deve extrair o primeiro objeto quando o modelo devolve dois JSONs", () => {
+      const result = parseJsonFromAssistantMessages([
+        { content: '{"sum":11}\n{"sum":12}' } as any,
+      ]);
+      expect(result).toEqual({ sum: 11 });
+    });
+
+    it("deve respeitar chaves dentro de strings ao extrair JSON", () => {
+      const result = parseJsonFromAssistantMessages([
+        {
+          content: '{"text":"chave { dentro } da string"}\n{"extra":true}',
+        } as any,
+      ]);
+      expect(result).toEqual({ text: "chave { dentro } da string" });
+    });
   });
 });
