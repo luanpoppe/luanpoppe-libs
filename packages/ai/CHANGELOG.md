@@ -3,6 +3,17 @@
 Todas as mudanças relevantes deste pacote. Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/)
 e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.2.2] - 2026-10-22
+
+### Adicionado
+- `OpenRouterProviderPreferences` agora aceita `zdr` (exigir providers com
+  zero data retention) e `data_collection` (`allow`/`deny`).
+
+### Mudado
+- O JSON Schema anexado ao system prompt em structured output agora é
+  serializado de forma compacta (sem pretty print), reduzindo o prompt em
+  ~245 tokens por chamada sem alterar o contrato.
+
 ## [1.2.1] - 2026-10-22
 
 ### Corrigido

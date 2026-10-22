@@ -14,7 +14,7 @@ export function buildJsonObjectSystemAppend(schema: z.ZodSchema): string {
     "",
     "IMPORTANTE: Responda somente com um objeto JSON válido (sem markdown, sem texto extra).",
     "O JSON deve seguir este schema:",
-    JSON.stringify(jsonSchema, null, 2),
+    JSON.stringify(jsonSchema),
   ].join("\n");
 }
 

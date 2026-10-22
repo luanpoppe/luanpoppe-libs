@@ -24,4 +24,8 @@ export type OpenRouterProviderPreferences = {
   require_parameters?: boolean;
   sort?: OpenRouterProviderSort;
   max_price?: OpenRouterMaxPrice;
+  /** Exige providers com zero data retention. */
+  zdr?: boolean;
+  /** Política de coleta de dados: `allow` (default) ou `deny`. */
+  data_collection?: "allow" | "deny";
 };

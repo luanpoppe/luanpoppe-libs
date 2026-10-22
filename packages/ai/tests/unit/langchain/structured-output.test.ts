@@ -29,6 +29,15 @@ describe("structured-output", () => {
       expect(append.toLowerCase()).toContain("json");
       expect(append).toContain("name");
     });
+
+    it("deve serializar o schema compacto, sem pretty print", () => {
+      const append = buildJsonObjectSystemAppend(
+        z.object({ name: z.string() }),
+      );
+      const schemaLine = append.trim().split("\n").at(-1) ?? "";
+      expect(schemaLine).not.toContain('  "');
+      expect(() => JSON.parse(schemaLine)).not.toThrow();
+    });
   });
 
   describe("parseJsonFromAssistantMessages", () => {

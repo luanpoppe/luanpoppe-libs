@@ -347,6 +347,26 @@ describe("AIModels", () => {
       );
     });
 
+    it("deve repassar zdr e data_collection no provider", () => {
+      const provider = {
+        only: ["relace"],
+        zdr: true,
+        data_collection: "deny" as const,
+      };
+
+      AIModels.openrouter({
+        model: "deepseek/deepseek-v4.1-flash-1017",
+        apiKey: "test-openrouter-key",
+        openRouterProvider: provider,
+      });
+
+      expect(ChatOpenAI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          modelKwargs: { provider },
+        }),
+      );
+    });
+
     it("deve mesclar provider com reasoningEffort usando o parametro reasoning do OpenRouter", () => {
       AIModels.openrouter({
         model: "deepseek/deepseek-r1",
