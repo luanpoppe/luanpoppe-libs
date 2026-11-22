@@ -1,4 +1,4 @@
-import { AI } from "../../src/index";
+import { AI, AITools } from "../../src/index";
 import { AIMessages } from "../../src/langchain/messages";
 import z from "zod";
 import "dotenv/config";
@@ -67,6 +67,47 @@ describe("AI E2E - DeepSeek Structured Output", () => {
 
       expect(result.response.sum).toBe(11);
       expect(result.response.product).toBe(28);
+    },
+  );
+
+  it(
+    "deve chamar tool e retornar structured output no deepseek-v4.1-flash",
+    { timeout },
+    async () => {
+      if (!requireOpenRouter()) return;
+
+      const ai = new AI({ openRouterApiKey: openRouterApiKey! });
+      const outputSchema = z.object({
+        city: z.string(),
+        temperature: z.number(),
+      });
+      let toolCallCount = 0;
+
+      const getTemperature = new AITools().createTool({
+        name: "getTemperature",
+        description: "Retorna a temperatura atual de uma cidade.",
+        schema: z.object({ city: z.string() }),
+        toolFunction: ({ city }) => {
+          toolCallCount += 1;
+          return { city, temperature: 22 };
+        },
+      });
+
+      const result = await ai.callStructuredOutput({
+        aiModel: "openrouter/deepseek/deepseek-v4.1-flash-1017",
+        messages: [
+          AIMessages.human(
+            "Use a tool getTemperature para descobrir a temperatura de Recife e responda em json.",
+          ),
+        ],
+        outputSchema,
+        modelConfig: { reasoningEffort: "low" },
+        agent: { tools: [getTemperature] },
+      });
+
+      expect(toolCallCount).toBeGreaterThan(0);
+      expect(result.response.city.toLowerCase()).toContain("recife");
+      expect(result.response.temperature).toBe(22);
     },
   );
 

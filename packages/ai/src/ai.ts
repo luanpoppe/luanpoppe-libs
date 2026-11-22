@@ -213,10 +213,16 @@ export class AI {
               const useJsonObject = isDeepSeekJsonObjectOnlyModel(
                 paramsForModel.aiModel,
               );
+              const toolCount = paramsForModel.agent?.tools?.length ?? 0;
+              const hasTools = toolCount > 0;
+              // Com tools, `json_object` faz o DeepSeek imprimir os argumentos
+              // da tool como texto em vez de chamá-la; nesse caso o schema fica
+              // só no prompt e a resposta final é extraída da última mensagem.
               const agentParams = useJsonObject
                 ? this.withDeepSeekJsonObjectParams(
                     paramsForModel,
                     params.outputSchema,
+                    { forceJsonObject: !hasTools },
                   )
                 : paramsForModel;
 
@@ -354,7 +360,10 @@ export class AI {
   private withDeepSeekJsonObjectParams<T extends AICallParams>(
     params: T,
     outputSchema: z.ZodSchema,
+    options?: { forceJsonObject?: boolean },
   ): T {
+    const forceJsonObject = options?.forceJsonObject ?? true;
+
     return {
       ...params,
       systemPrompt: mergeSystemPromptWithJsonSchema(
@@ -363,7 +372,7 @@ export class AI {
       ),
       modelConfig: {
         ...params.modelConfig,
-        openRouterForceJsonObject: true,
+        openRouterForceJsonObject: forceJsonObject,
         openRouterResponseHealing: true,
       },
     };

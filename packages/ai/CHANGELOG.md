@@ -3,6 +3,15 @@
 Todas as mudanças relevantes deste pacote. Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/)
 e versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.2.3] - 2026-11-21
+
+### Corrigido
+- Structured output com tools no DeepSeek: `response_format: json_object` não é
+  mais forçado quando `agent.tools` está presente. Com JSON mode o modelo
+  imprimia os argumentos da tool como texto, a validação falhava e o retry
+  respondia sem executar a tool. O schema continua no system prompt e a
+  resposta final é extraída da última mensagem.
+
 ## [1.2.2] - 2026-10-22
 
 ### Adicionado
